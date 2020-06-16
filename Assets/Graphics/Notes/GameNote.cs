@@ -41,12 +41,12 @@ public class GameNote : MonoBehaviour
         //Create an instance of the target circle
         GameObject target = Instantiate(targetPrefab) as GameObject;
         //Place the target circle at one end of the note
-        target.transform.position = _lastNode;
+        target.transform.position = _lastNode + transform.position;
 
         //Create an instance of the end cap
         GameObject endCap = Instantiate(endPrefab) as GameObject;
         //Place the end cap at the other end of the note
-        endCap.transform.position = _firstNode;
+        endCap.transform.position = _firstNode + transform.position;
 
         //Calculate the spline angle for the end cap's rotation
         float c = Mathf.Atan2((_spline.GetRightTangent(0).y), (_spline.GetRightTangent(0).x));
