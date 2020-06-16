@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.U2D;
 
 public class GameNote : MonoBehaviour
@@ -25,6 +26,7 @@ public class GameNote : MonoBehaviour
         _index = _spline.GetPointCount() - 1;
         _lastNode = _spline.GetPosition(_index);
 
+        //Create the target circle and the cap
         MakeParts();
     }
 
@@ -36,40 +38,21 @@ public class GameNote : MonoBehaviour
 
     void MakeParts()
     {
+        //Create an instance of the target circle
         GameObject target = Instantiate(targetPrefab) as GameObject;
+        //Place the target circle at one end of the note
         target.transform.position = _lastNode;
 
+        //Create an instance of the end cap
         GameObject endCap = Instantiate(endPrefab) as GameObject;
+        //Place the end cap at the other end of the note
         endCap.transform.position = _firstNode;
 
-        Vector3 lt = Vector3.Normalize(_spline.GetLeftTangent(_index) - _spline.GetRightTangent(_index));
-        Vector3 rt = Vector3.Normalize(_spline.GetLeftTangent(_index) - _spline.GetRightTangent(_index));
+        //Calculate the spline angle for the end cap's rotation
+        float c = Mathf.Atan2((_spline.GetRightTangent(0).y), (_spline.GetRightTangent(0).x));
+        c = c * Mathf.Rad2Deg;
 
-        float a = Angle(Vector3.left, lt);
-        float b = Angle(Vector3.right, rt);
-        float c = a + (b * 0.5f);
-
-        if (b > c)
-            c = (180 + c);
-
-        endCap.transform.rotation = Quaternion.Euler(0, 0, (c * -1 - 90));
+        //Apply rotation (c) to the end cap's rotation transformation
+        endCap.transform.rotation = Quaternion.Euler(0, 0, (c));
     }
-
-    private float Angle(Vector3 a, Vector3 b)
-    {
-        float dot = Vector3.Dot(a, b);
-        float det = (a.x * b.y) - (b.x * a.y);
-        return Mathf.Atan2(det, dot) * Mathf.Rad2Deg;
-    }
-
-    private Vector2 Rotate(Vector2 v, float degrees)
-    {
-        float radians = degrees * Mathf.Deg2Rad;
-        float sin = Mathf.Sin(radians);
-        float cos = Mathf.Cos(radians);
-        float tx = v.x;
-        float ty = v.y;
-        return new Vector2(cos * tx - sin * ty, sin * tx + cos * ty);
-    }
-
 }
