@@ -1,0 +1,8 @@
+Elemental notes
+- Ice slides faster the longer you hold it
+- Fire has to be tapped
+- Lightning notes hold and let go just before the strike
+
+Switchable tracks along the path instead of auto-adjust by difficulty?
+
+Multiple tracks to manage at once?
