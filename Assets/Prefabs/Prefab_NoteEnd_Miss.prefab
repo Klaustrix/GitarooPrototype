@@ -13,8 +13,8 @@ GameObject:
   - component: {fileID: 4545938390391016291}
   - component: {fileID: 6601098657933491018}
   m_Layer: 0
-  m_Name: Sprite_NoteEnd_Miss
-  m_TagString: Untagged
+  m_Name: Prefab_NoteEnd_Miss
+  m_TagString: NoteEnd
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -98,9 +98,9 @@ BoxCollider2D:
   m_UsedByComposite: 0
   m_Offset: {x: 0.0602, y: 0}
   m_SpriteTilingProperty:
-    border: {x: 0.01, y: 0.01, z: 0.01, w: 0.01}
-    pivot: {x: 0.07, y: 0.5}
-    oldSize: {x: 0.14, y: 0.54}
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0, y: 0.5}
+    oldSize: {x: 0.12, y: 0.52}
     newSize: {x: 0.14, y: 0.54}
     adaptiveTilingThreshold: 0.5
     drawMode: 0

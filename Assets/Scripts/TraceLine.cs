@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class TraceLine : MonoBehaviour
 {
-    public static Material aimTrue;
-    public static Material aimFalse;
+    public Material aimTrue;
+    public Material aimFalse;
 
     private bool aimCheck = false;
 

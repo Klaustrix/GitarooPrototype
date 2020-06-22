@@ -10,6 +10,10 @@ public class Note : MonoBehaviour
     public GameObject targetPrefab;
     public GameObject endPrefab;
     public GameObject endMissPrefab;
+    public Material matDefault;
+    public Material matMissed;
+    public bool noteMissed = false;
+    public bool checkForClip = false;
 
     //Instantiation Variables
     private Vector3 _start;
@@ -21,14 +25,14 @@ public class Note : MonoBehaviour
     private GameObject _myEndNote;
 
     //Regular Variables
-    public Material matDefault;
-    public Material matMissed;
-    public bool noteMissed = false;
     private bool _lockMiss = false;
 
     // Start is called before the first frame update
     void Start()
     {
+        //Turn off the spline projector while not in use, projections are expensive
+        GetComponent<SplineProjector>().enabled = false;
+
         //Setup the positions for the first and last nodes in the spline
         _noteSpline = GetComponent<SplineComputer>();
         SplinePoint[] points = _noteSpline.GetPoints();
@@ -49,11 +53,30 @@ public class Note : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        //Enable the projector if the note collides with the fan
+        if (checkForClip == true && GetComponent<SplineProjector>().enabled == false)
+        {
+            GetComponent<SplineProjector>().enabled = true;
+        }
+
+        //Begin clipping the note as it passes by the fan position
+        if (GetComponent<SplineProjector>().enabled == true)
+        {
+            _noteSpline.GetComponent<SplineRenderer>().clipFrom = GetComponent<SplineProjector>().result.percent;
+
+            //Delete the note if it's passed the middle
+            if (GetComponent<SplineProjector>().result.percent == 1)
+            {
+                Destroy(gameObject);
+            }
+        }
+
+        //Load the blue texture and end cap if the note becomes 'missed'
         if (noteMissed == true && _lockMiss == false)
         {
             GetComponent<MeshRenderer>().material = matMissed;
             ReplaceEnd();
-            _lockMiss = true;
+            _lockMiss = true; //Prevent multiple spawns of the endcap
         }
     }
 

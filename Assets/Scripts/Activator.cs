@@ -5,10 +5,11 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.U2D.Path;
 using UnityEngine;
+using UnityEngine.Assertions.Must;
 
 public class Activator : MonoBehaviour
 {
-    //Variables for notes
+    //Variables for note logic
     GameObject noteObject;
     private bool _active = false;           //Toggles if currently in contact with a note object - Not really used
     private bool _noteWindow = false;       //Toggles while in contact with the note target
@@ -27,6 +28,9 @@ public class Activator : MonoBehaviour
     public static float aimAngle;
     public static bool aimAccurate = false;
     public bool aimAssist = false;
+    public float noteClipPercent;
+    public SplineSample sample;
+    public static Vector3 fanPosition;
 
     //Variables for counting score and note accuracy
     public static int songScore = 0;
@@ -46,6 +50,7 @@ public class Activator : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        fanPosition = transform.position;
         FanControl();
         InputControl();
     }
@@ -108,6 +113,13 @@ public class Activator : MonoBehaviour
 
             //Use the analogue rotation for the fan rotation
             transform.eulerAngles = Vector3.forward * _fanAngle;
+        }
+
+        //------------------------CLIP THE TRACE LINE------------------------//
+        
+        if (_activeTraceSpline != null)
+        {
+            _activeTraceSpline.GetComponent<SplineRenderer>().clipFrom = _currentTracePosition;
         }
     }
 
@@ -175,6 +187,7 @@ public class Activator : MonoBehaviour
         if (collision.gameObject.tag == "Note")
         {
             noteObject = collision.gameObject;
+            noteObject.GetComponent<Note>().checkForClip = true;
         }
 
         //When you arrive at a note end cap...
