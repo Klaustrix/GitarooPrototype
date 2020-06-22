@@ -5,6 +5,8 @@ TagManager:
   serializedVersion: 2
   tags:
   - Note
+  - NoteTarget
+  - NoteEnd
   layers:
   - Default
   - TransparentFX
@@ -39,6 +41,12 @@ TagManager:
   - 
   - 
   m_SortingLayers:
+  - name: UnderEverything
+    uniqueID: 1743018741
+    locked: 0
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: Interface
+    uniqueID: 683921041
     locked: 0
