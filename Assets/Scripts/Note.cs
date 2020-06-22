@@ -7,22 +7,22 @@ using System.Runtime.InteropServices.ComTypes;
 public class Note : MonoBehaviour
 {
     //Public Variables
-    public GameObject targetPrefab;
-    public GameObject endPrefab;
-    public GameObject endMissPrefab;
-    public Material matDefault;
-    public Material matMissed;
-    public bool noteMissed = false;
-    public bool checkForClip = false;
+    public GameObject targetPrefab;     //A prefab for the 'target' at the front of the note
+    public GameObject endPrefab;        //A prefab for the 'end cap' at the end of the note
+    public GameObject endMissPrefab;    //A prefab for the 'end cap' at the end of the note when you've missed
+    public Material matDefault;         //The default pink material for the spline mesh
+    public Material matMissed;          //The alternative blue material for the spline mesh
+    public bool noteMissed = false;     //Toggled by other scripts if the note has been missed and needs to turn blue
+    public bool checkForClip = false;   //Toggles if the spline projector should be turned on; (OFF BY DEFAULT, HEAVY LOAD)
 
     //Instantiation Variables
-    private Vector3 _start;
-    private Vector3 _end;
-    private int _index;
-    private SplineComputer _noteSpline;
-    private Vector3 _pastTracePosition;
-    private float _aimAngle;
-    private GameObject _myEndNote;
+    private Vector3 _start;             //The starting node of the note spline
+    private Vector3 _end;               //The last node of the note spline
+    private int _index;                 //Manages the total number of nodes within the spline
+    private SplineComputer _noteSpline; //A reference to the note spline's spline computer
+    private Vector3 _pastTracePosition; //A position just before the end of the last node of the note spline
+    private float _aimAngle;            //The angle to aim the end cap so it lines up with the end of the spline
+    private GameObject _myEndNote;      //A reference to the end cap game object for later deletion if it needs to be replaced (the player missed the note)
 
     //Regular Variables
     private bool _lockMiss = false;
@@ -65,7 +65,7 @@ public class Note : MonoBehaviour
             _noteSpline.GetComponent<SplineRenderer>().clipFrom = GetComponent<SplineProjector>().result.percent;
 
             //Delete the note if it's passed the middle
-            if (GetComponent<SplineProjector>().result.percent == 1)
+            if (_myEndNote == null)
             {
                 Destroy(gameObject);
             }
@@ -98,8 +98,8 @@ public class Note : MonoBehaviour
     void ReplaceEnd()
     {
         Destroy(_myEndNote);
-        _myEndNote = null;
         GameObject endCapMiss = Instantiate(endMissPrefab) as GameObject;
+        _myEndNote = endCapMiss.gameObject;
         endCapMiss.transform.eulerAngles = Vector3.forward * _aimAngle;
         Physics2D.IgnoreCollision(endCapMiss.GetComponent<Collider2D>(), gameObject.GetComponent<Collider2D>());
         endCapMiss.transform.position = _end;

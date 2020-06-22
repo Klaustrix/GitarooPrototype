@@ -9,28 +9,24 @@ using UnityEngine.Assertions.Must;
 
 public class Activator : MonoBehaviour
 {
+    //General Variables
+    public static Vector3 centrePosition;   //A public reference to the position at the centre of the screen
+
+    //Variables for following the current trace line
+    public static double currentTracePosition;  //The activator's current position along the trace line
+    public static Vector3 futureTracePosition;  //The activator's future position along the current trace line
+    private SplineComputer _activeTraceSpline;  //A reference to the spline computer of the current trace line
+    private SplineFollower _follower;           //A reference to the follower component
+
+    //Variables for clipping the trace line being followed
+    public float noteClipPercent;
+
     //Variables for note logic
-    GameObject noteObject;
+    private GameObject noteObject;          //Contains a reference to the current note gameobject
     private bool _active = false;           //Toggles if currently in contact with a note object - Not really used
     private bool _noteWindow = false;       //Toggles while in contact with the note target
     private bool _noteActive = false;       //Toggles if you successfully hit a note within the window
     private bool _noteEndWindow = false;    //Toggles while in contact with the note end cap
-
-    //Varivables for fan rotation
-    private float _fanAngle;
-    private Vector3 _fanVector; //Unused
-
-    //Variables for aiming the fan at the trace line
-    private SplineComputer _activeTraceSpline;
-    private SplineFollower _follower;
-    private double _currentTracePosition;
-    private Vector3 _futureTracePosition;
-    public static float aimAngle;
-    public static bool aimAccurate = false;
-    public bool aimAssist = false;
-    public float noteClipPercent;
-    public SplineSample sample;
-    public static Vector3 fanPosition;
 
     //Variables for counting score and note accuracy
     public static int songScore = 0;
@@ -50,76 +46,31 @@ public class Activator : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        fanPosition = transform.position;
-        FanControl();
+        //Publicly available position of the activator
+        centrePosition = transform.position;
+
+        //Update public stats for the trace line being followed
+        SplineStats();
+
+        //Update controller input
         InputControl();
-    }
 
-    private void FanControl()
-    {
-        //------------------------FAN ROTATION------------------------//
-        //The angle the analogue stick is pointed at in degrees
-        _fanAngle = Mathf.Atan2(Input.GetAxis("Vertical"), Input.GetAxis("Horizontal")) * Mathf.Rad2Deg;
-
-        //A vector position derived from the x and y axis of the analogue stick
-        _fanVector = new Vector3(Input.GetAxis("Vertical"), Input.GetAxis("Horizontal"), 0);
-
-        //------------------------FIND DIRECTION------------------------//
-        //The total % travelled along the current spline being followed
-        _currentTracePosition = _follower.result.percent;
-
-        //The vector position of a future % point along the current active trace spline
-        _futureTracePosition = _activeTraceSpline.EvaluatePosition(_currentTracePosition + 0.001);
-
-        //The vector position of the future point - the current point on the spline
-        Vector3 _aimVector = _futureTracePosition - transform.position;
-
-        //The angle between the current and future points on the spline in degrees
-        float _aimAngle = Mathf.Atan2(_aimVector.y, _aimVector.x) * Mathf.Rad2Deg;
-
-        //A quaternion rotation to the exact angle the spline is being travelled along
-        Quaternion _aimQuat = Quaternion.AngleAxis(_aimAngle, Vector3.forward);
-
-        //------------------------CHECK AIM------------------------//
-        //Get the angle between the fan's angle and the angle of the spline
-        float _aimTest = Mathf.DeltaAngle(_fanAngle, _aimAngle);
-
-        //Test to see if the analogue is pointing the fan within 40 degrees +/- of the spline position
-        if (_aimTest > -40 && _aimTest < 40)
-        {
-            //If true, tell the TraceLine script to turn green
-            aimAccurate = true;
-
-            //If aim assist is active, follow the spline exactly while within this range
-            if (aimAssist == true)
-            {
-                transform.rotation = Quaternion.Lerp(transform.rotation, _aimQuat, Time.deltaTime * 20);
-            }
-            //Otherwise just use the current direction the analogue is being aimed to rotate the fan object
-            else
-            {
-                transform.eulerAngles = Vector3.forward * _fanAngle;
-            }
-
-        }
-        //If you aren't pointed at the line...
-        else
-        {
-            //Tell the trace line to turn blue
-            aimAccurate = false;
-
-            //Soft miss
-            ResetNote(1);
-
-            //Use the analogue rotation for the fan rotation
-            transform.eulerAngles = Vector3.forward * _fanAngle;
-        }
-
-        //------------------------CLIP THE TRACE LINE------------------------//
-        
+        //Clip the trace line as it passes over the centre of the screen
         if (_activeTraceSpline != null)
         {
-            _activeTraceSpline.GetComponent<SplineRenderer>().clipFrom = _currentTracePosition;
+            _activeTraceSpline.GetComponent<SplineRenderer>().clipFrom = currentTracePosition;
+        }
+    }
+
+    private void SplineStats()
+    {
+        //The total % travelled along the current spline being followed
+        currentTracePosition = _follower.result.percent;
+
+        //The vector position of a future % point along the current active trace spline
+        if (currentTracePosition != 1)
+        {
+            futureTracePosition = _activeTraceSpline.EvaluatePosition(currentTracePosition + 0.001);
         }
     }
 
@@ -131,7 +82,7 @@ public class Activator : MonoBehaviour
         if (Input.GetButtonDown("XboxA") == true)
         {
             //If you are aiming correctly, and are over the note target
-            if (_noteWindow == true && aimAccurate == true)
+            if (_noteWindow == true && Cursor.aimAccurate == true)
             {
                 //Register that you are holding down an active note
                 _noteActive = true;
@@ -148,7 +99,7 @@ public class Activator : MonoBehaviour
         if (Input.GetButton("XboxA") == true)
         {
             //and you are holding down on a hit note
-            if (_noteActive == true && aimAccurate == true)
+            if (_noteActive == true && Cursor.aimAccurate == true)
             {
                 //GainLife in Charge Mode
                 //DealDamage in Attack Mode
@@ -159,13 +110,13 @@ public class Activator : MonoBehaviour
         if (Input.GetButtonUp("XboxA") == true)
         {
             //And you held the note to the end
-            if (_noteActive == true && aimAccurate == true && _noteEndWindow == true)
+            if (_noteActive == true && Cursor.aimAccurate == true && _noteEndWindow == true)
             {
                 //Reset the note
                 ResetNote(0);
             }
             //And you let go early
-            if (_noteActive == true && aimAccurate == true && _noteEndWindow == false)
+            if (_noteActive == true && Cursor.aimAccurate == true && _noteEndWindow == false)
             {
                 //Soft Miss
                 ResetNote(1);
@@ -176,7 +127,7 @@ public class Activator : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D collision)
     {
         //When you arrive at a note target...
-        if (collision.gameObject.tag == "NoteTarget" && aimAccurate == true)
+        if (collision.gameObject.tag == "NoteTarget" && Cursor.aimAccurate == true)
         {
             //Make the note related code active and open the window for hitting the target
             _active = true;
@@ -229,7 +180,7 @@ public class Activator : MonoBehaviour
         }
     }
 
-    private void ResetNote(int _resetType)
+    public void ResetNote(int _resetType)
     {
         //Reset Note Only
         if (_resetType >= 0)

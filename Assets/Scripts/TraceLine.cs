@@ -4,10 +4,9 @@ using UnityEngine;
 
 public class TraceLine : MonoBehaviour
 {
-    public Material aimTrue;
-    public Material aimFalse;
-
-    private bool aimCheck = false;
+    public Material aimTrue;                //Material for if aim is correct (Green)
+    public Material aimFalse;               //Material for it aim is incorrect (Blue)
+    private bool aimCheck = false;          //Confirms if the cursor is pointed at the current trace line
 
     // Start is called before the first frame update
     void Start()
@@ -18,7 +17,7 @@ public class TraceLine : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        aimCheck = Activator.aimAccurate;
+        aimCheck = Cursor.aimAccurate;
 
         if (aimCheck == true)
         {

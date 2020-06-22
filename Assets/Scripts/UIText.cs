@@ -6,7 +6,6 @@ using UnityEngine.UI;
 public class UIText : MonoBehaviour
 {
     private int _textTimer = 0;
-    private int _currentScore = 0;
     private int _currentMisses = 0;
     private int _currentHits = 0;
 

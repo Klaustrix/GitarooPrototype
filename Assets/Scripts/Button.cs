@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class Button : MonoBehaviour
 {
-    private bool _isPressed;
     private Vector3 _big;
     private Color _colorSolid;
     private Color _colorTransparent;
@@ -21,10 +20,12 @@ public class Button : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        //If A is pressed, increase size
         if (Input.GetButtonDown("XboxA") == true)
         {
             transform.localScale += _big;
         }
+        //If A is released, decrease size
         if (Input.GetButtonUp("XboxA") == true)
         {
             transform.localScale -= _big;

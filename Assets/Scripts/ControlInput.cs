@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class NoteTarget : MonoBehaviour
+public class ControlInput : MonoBehaviour
 {
-
     // Start is called before the first frame update
     void Start()
     {

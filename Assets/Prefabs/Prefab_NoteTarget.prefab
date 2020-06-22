@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 7333207521174026917}
   - component: {fileID: 7291484392590481041}
   - component: {fileID: 1319595523544101611}
-  - component: {fileID: 4968918829551332126}
   m_Layer: 0
   m_Name: Prefab_NoteTarget
   m_TagString: NoteTarget
@@ -121,16 +120,3 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
---- !u!114 &4968918829551332126
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4471681793775536527}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 466d333e6d0d42643b3fe7100e1953ac, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  noteRef: 0
