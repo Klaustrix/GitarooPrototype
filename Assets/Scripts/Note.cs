@@ -6,16 +6,16 @@ using System.Runtime.InteropServices.ComTypes;
 
 public class Note : MonoBehaviour
 {
-    //Prefabs
+    //Public Variables
     public GameObject targetPrefab;     //A prefab for the 'target' at the front of the note
     public GameObject endPrefab;        //A prefab for the 'end cap' at the end of the note
     public GameObject endMissPrefab;    //A prefab for the 'end cap' at the end of the note when you've missed
-
-    //Materials
     public Material matDefault;         //The default pink material for the spline mesh
     public Material matMissed;          //The alternative blue material for the spline mesh
+    public bool noteMissed = false;     //Toggled by other scripts if the note has been missed and needs to turn blue
+    public bool checkForClip = false;   //Toggles if the spline projector should be turned on; (OFF BY DEFAULT, HEAVY LOAD)
 
-    //Variables for creating the note parts (target/endcap)
+    //Instantiation Variables
     private Vector3 _start;             //The starting node of the note spline
     private Vector3 _end;               //The last node of the note spline
     private int _index;                 //Manages the total number of nodes within the spline
@@ -23,17 +23,8 @@ public class Note : MonoBehaviour
     private Vector3 _pastTracePosition; //A position just before the end of the last node of the note spline
     private float _aimAngle;            //The angle to aim the end cap so it lines up with the end of the spline
     private GameObject _myEndNote;      //A reference to the end cap game object for later deletion if it needs to be replaced (the player missed the note)
-    
-    //Variables for changing color
-    public bool noteMissed = false;     //Toggled by other scripts if the note has been missed and needs to turn blue
-    
-    //Variables for clipping the spline
-    public bool checkForClip = false;   //Toggles if the spline projector should be turned on; (OFF BY DEFAULT, HEAVY LOAD)
 
     //Regular Variables
-    public GameObject myParentTraceline;
-    public static Vector3 notePosition;
-    public static Vector3 notePositionRelative;
     private bool _lockMiss = false;
 
     // Start is called before the first frame update
@@ -41,12 +32,6 @@ public class Note : MonoBehaviour
     {
         //Turn off the spline projector while not in use, projections are expensive
         GetComponent<SplineProjector>().enabled = false;
-
-        //Setup note position
-        notePosition = transform.position;
-
-        //Setup note position relative to the parent Trace Line
-        //notePositionRelative = transform.position;
 
         //Setup the positions for the first and last nodes in the spline
         _noteSpline = GetComponent<SplineComputer>();
