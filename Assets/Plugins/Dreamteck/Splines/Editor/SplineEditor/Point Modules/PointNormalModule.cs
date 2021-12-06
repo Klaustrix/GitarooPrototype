@@ -119,7 +119,7 @@ namespace Dreamteck.Splines.Editor
         void AutoNormal(int index)
         {
             editor.evaluateAtPoint(index, evalResult);
-            Handles.color = SplinePrefs.highlightColor;
+            Handles.color = highlightColor;
             Handles.DrawWireDisc(evalResult.position, evalResult.forward, HandleUtility.GetHandleSize(points[index].position) * 0.5f);
             Handles.color = color;
             Matrix4x4 matrix = Matrix4x4.TRS(points[index].position, evalResult.rotation, Vector3.one);
@@ -151,7 +151,7 @@ namespace Dreamteck.Splines.Editor
 
         void FreeNormal(int index)
         {
-            Handles.color = SplinePrefs.highlightColor;
+            Handles.color = highlightColor;
             Handles.DrawWireDisc(points[index].position, points[index].normal, HandleUtility.GetHandleSize(points[index].position) * 0.25f);
             Handles.DrawWireDisc(points[index].position, points[index].normal, HandleUtility.GetHandleSize(points[index].position) * 0.5f);
             Handles.color = color;

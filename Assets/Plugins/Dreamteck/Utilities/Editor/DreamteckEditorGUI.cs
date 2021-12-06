@@ -128,7 +128,7 @@ namespace Dreamteck
             return layerMask;
         }
 
-        public static bool DropArea<T>(Rect rect, out T[] content)
+        public static bool DropArea<T>(Rect rect, out T[] content, bool acceptProjectAssets = false)
         {
             content = new T[0];
             switch (Event.current.type)
@@ -148,13 +148,7 @@ namespace Dreamteck
                             if (dragged_object is GameObject)
                             {
                                 GameObject gameObject = (GameObject)dragged_object;
-#if UNITY_2018_3_OR_NEWER
-                                bool isNotAprefab = PrefabUtility.GetPrefabAssetType(gameObject) == PrefabAssetType.NotAPrefab;
-#else
-                                bool isNotAprefab = PrefabUtility.GetPrefabType(gameObject) == PrefabType.None;
-#endif
-
-                                if (isNotAprefab)
+                                if (acceptProjectAssets || !AssetDatabase.Contains(gameObject))
                                 {
                                     if (gameObject.GetComponent<T>() != null) contentList.Add(gameObject.GetComponent<T>());
                                 }

@@ -268,15 +268,27 @@ namespace Dreamteck.Splines.Editor
                 }
             }
 
-            
-            if (pathEditor.currentModule != null) transformTool = 0;
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Label("Edit Transform");
-            GUILayout.FlexibleSpace();
-            int lastTool = transformTool;
-            transformToolbar.Draw(ref transformTool);
-            if (lastTool != transformTool && transformTool > 0) pathEditor.UntoggleCurrentModule();
-            EditorGUILayout.EndHorizontal();
+
+            if (pathEditor.currentModule != null)
+            {
+                transformTool = 0;
+            }
+            if (splines.Length == 1)
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Label("Edit Transform");
+                GUILayout.FlexibleSpace();
+                int lastTool = transformTool;
+                transformToolbar.Draw(ref transformTool);
+                if (lastTool != transformTool && transformTool > 0)
+                {
+                    pathEditor.UntoggleCurrentModule();
+                }
+                EditorGUILayout.EndHorizontal();
+            } else
+            {
+                GUILayout.Label("Edit Transform unavailable with multiple splines");
+            }
         }
 
         void PerformOperation()
@@ -359,9 +371,9 @@ namespace Dreamteck.Splines.Editor
             spline.SetPoints(points);
         }
 
-        public override void DrawScene()
+        public override void DrawScene(SceneView current)
         {
-            base.DrawScene();
+            base.DrawScene(current);
             if (drawComputer)
             {
                 for (int i = 0; i < splines.Length; i++)
@@ -386,6 +398,10 @@ namespace Dreamteck.Splines.Editor
 
             if (pathEditor.currentModule == null)
             {
+                if(splines.Length > 1)
+                {
+                    transformTool = 0;
+                }
                 switch (transformTool)
                 {
                     case 1:

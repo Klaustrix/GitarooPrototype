@@ -10,7 +10,7 @@ using UnityEngine.Assertions.Must;
 public class Activator : MonoBehaviour
 {
     //General Variables
-    public static Vector3 centrePosition;   //A public reference to the position at the centre of the screen
+    public static Vector3 centrePosition;       //A public reference to the position at the centre of the screen
 
     //Variables for following the current trace line
     public static double currentTracePosition;  //The activator's current position along the trace line
@@ -21,12 +21,15 @@ public class Activator : MonoBehaviour
     //Variables for clipping the trace line being followed
     public float noteClipPercent;
 
+    //Variables for input checks
+    private bool _primaryInputState = false;    //Used to check if the primary input is being held
+
     //Variables for note logic
-    private GameObject noteObject;          //Contains a reference to the current note gameobject
-    private bool _active = false;           //Toggles if currently in contact with a note object - Not really used
-    private bool _noteWindow = false;       //Toggles while in contact with the note target
-    private bool _noteActive = false;       //Toggles if you successfully hit a note within the window
-    private bool _noteEndWindow = false;    //Toggles while in contact with the note end cap
+    private GameObject noteObject;              //Contains a reference to the current note gameobject
+    private bool _active = false;               //Toggles if currently in contact with a note object - Not really used
+    private bool _noteWindow = false;           //Toggles while in contact with the note target
+    private bool _noteActive = false;           //Toggles if you successfully hit a note within the window
+    private bool _noteEndWindow = false;        //Toggles while in contact with the note end cap
 
     //Variables for counting score and note accuracy
     public static int songScore = 0;
@@ -53,7 +56,7 @@ public class Activator : MonoBehaviour
         SplineStats();
 
         //Update controller input
-        InputControl();
+        NoteHitLogic();
 
         //Clip the trace line as it passes over the centre of the screen
         if (_activeTraceSpline != null)
@@ -62,6 +65,7 @@ public class Activator : MonoBehaviour
         }
     }
 
+    //Checks the position of a location just slightly ahead of where we are along the current spline
     private void SplineStats()
     {
         //The total % travelled along the current spline being followed
@@ -74,12 +78,14 @@ public class Activator : MonoBehaviour
         }
     }
 
-    private void InputControl()
+    //Handles note hit logic
+    private void NoteHitLogic()
     {
-        //Add support for all buttons - ABXY
+        //Check the SceneInput object for the state of the primary input button
+        _primaryInputState = GameObject.Find("SceneInput").GetComponent<ProcessInput>().attackPressed;
 
         //When you press the A button
-        if (Input.GetButtonDown("XboxA") == true)
+        if (_primaryInputState == true)
         {
             //If you are aiming correctly, and are over the note target
             if (_noteWindow == true && Cursor.aimAccurate == true)
@@ -91,13 +97,9 @@ public class Activator : MonoBehaviour
                 _noteWindow = false;
 
                 //Gain score - adjust later to be based on accuracy
-                ScoreCounter("Hit");
+                ScoreCalc("Hit");
             }
-        }
-
-        //While holding the A button...
-        if (Input.GetButton("XboxA") == true)
-        {
+        
             //and you are holding down on a hit note
             if (_noteActive == true && Cursor.aimAccurate == true)
             {
@@ -107,23 +109,24 @@ public class Activator : MonoBehaviour
         }
 
         //When you release the A button...
-        if (Input.GetButtonUp("XboxA") == true)
+        if (_primaryInputState == false)
         {
             //And you held the note to the end
             if (_noteActive == true && Cursor.aimAccurate == true && _noteEndWindow == true)
             {
                 //Reset the note
-                ResetNote(0);
+                NoteMissLogic(0);
             }
             //And you let go early
             if (_noteActive == true && Cursor.aimAccurate == true && _noteEndWindow == false)
             {
                 //Soft Miss
-                ResetNote(1);
+                NoteMissLogic(1);
             }
         }
     }
 
+    //Handles note hit logic and increasing life
     private void OnTriggerEnter2D(Collider2D collision)
     {
         //When you arrive at a note target...
@@ -148,6 +151,7 @@ public class Activator : MonoBehaviour
         }
     }
 
+    //Handles note miss logic
     private void OnTriggerExit2D(Collider2D collision)
     {
         if (collision.gameObject.tag == "NoteTarget" ||
@@ -165,7 +169,7 @@ public class Activator : MonoBehaviour
                 if (_noteActive != true)
                 {
                     //Register note miss and reset note flags, null note object
-                    ResetNote(2);
+                    NoteMissLogic(2);
                 }
             }
 
@@ -180,7 +184,8 @@ public class Activator : MonoBehaviour
         }
     }
 
-    public void ResetNote(int _resetType)
+    //Logic for turning notes blue and reducing life
+    public void NoteMissLogic(int _resetType)
     {
         //Reset Note Only
         if (_resetType >= 0)
@@ -201,7 +206,7 @@ public class Activator : MonoBehaviour
                 {
                     //Screen Shake
                     //LoseLife()
-                    ScoreCounter("Miss");
+                    ScoreCalc("Miss");
                 }
             }
 
@@ -209,7 +214,8 @@ public class Activator : MonoBehaviour
         }
     }
 
-    private void ScoreCounter(string type)
+    //Logic for adjusting the score
+    private void ScoreCalc(string type)
     {
         //Need to do a lot more work here to be properly working
 

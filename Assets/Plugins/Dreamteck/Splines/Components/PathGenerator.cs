@@ -119,7 +119,6 @@ namespace Dreamteck.Splines
 
         protected override void BuildMesh()
         {
-           if (sampleCount == 0) return;
            base.BuildMesh();
            GenerateVertices();
            MeshUtility.GeneratePlaneTriangles(ref tsMesh.triangles, _slices, sampleCount, false);
@@ -145,20 +144,24 @@ namespace Dreamteck.Splines
                    center = evalResult.position;
                 } catch (System.Exception ex) { Debug.Log(ex.Message + " for i = " + i); return; }
                 Vector3 right = evalResult.right;
-                if (hasOffset) center += offset.x * right + offset.y * evalResult.up + offset.z * evalResult.forward;
-                float fullSize = size * evalResult.size;
+                float resultSize = GetBaseSize(evalResult);
+                if (hasOffset)
+                {
+                    center += (offset.x * resultSize) * right + (offset.y * resultSize) * evalResult.up + (offset.z * resultSize) * evalResult.forward;
+                }
+                float fullSize = size * resultSize;
                 Vector3 lastVertPos = Vector3.zero;
                 Quaternion rot = Quaternion.AngleAxis(rotation, evalResult.forward);
                 if (uvMode == UVMode.UniformClamp || uvMode == UVMode.UniformClip) AddUVDistance(i);
-                Color vertexColor = evalResult.color * color;
+                Color vertexColor = GetBaseColor(evalResult) * color;
                 for (int n = 0; n < _slices + 1; n++)
                 {
                     float slicePercent = ((float)n / _slices);
                     float shapeEval = 0f;
                     if (_useShapeCurve) shapeEval = _shape.Evaluate(slicePercent);
-                    tsMesh.vertices[vertexIndex] = center + rot * right * fullSize * 0.5f - rot * right * fullSize * slicePercent + rot * evalResult.up * shapeEval * _shapeExposure;
+                    tsMesh.vertices[vertexIndex] = center + rot * right * (fullSize * 0.5f) - rot * right * (fullSize * slicePercent) + rot * evalResult.up * (shapeEval * _shapeExposure);
                     CalculateUVs(evalResult.percent, 1f - slicePercent);
-                    tsMesh.uv[vertexIndex] = Vector2.one * 0.5f + (Vector2)(Quaternion.AngleAxis(uvRotation, Vector3.forward) * (Vector2.one * 0.5f - uvs));
+                    tsMesh.uv[vertexIndex] = Vector2.one * 0.5f + (Vector2)(Quaternion.AngleAxis(uvRotation + 180f, Vector3.forward) * (Vector2.one * 0.5f - uvs));
                     if (_slices > 1)
                     {
                         if (n < _slices)

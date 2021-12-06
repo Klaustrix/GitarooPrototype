@@ -118,20 +118,22 @@ namespace Dreamteck.Splines
 
             for (int i = 0; i < sampleCount; i++)
             {
-                Vector3 samplePosition = GetSampleRaw(i).position;
+                evalResult = GetSampleRaw(i);
+                float resultSize = GetBaseSize(evalResult);
+                Vector3 samplePosition = evalResult.position;
                 Vector3 localSamplePosition = spline.InverseTransformPoint(samplePosition);
                 Vector3 bottomPosition = localSamplePosition;
-                Vector3 sampleDirection = GetSampleRaw(i).forward;
-                Vector3 sampleNormal = GetSampleRaw(i).up;
+                Vector3 sampleDirection = evalResult.forward;
+                Vector3 sampleNormal = evalResult.up;
 
                 float heightPercent = 1f;
                 if (_uvWrapMode == UVWrapMode.UniformX || _uvWrapMode == UVWrapMode.Uniform)
                 {
-                    if (i > 0) totalLength += Vector3.Distance(GetSampleRaw(i).position, GetSampleRaw(i - 1).position);
+                    if (i > 0) totalLength += Vector3.Distance(evalResult.position, GetSampleRaw(i - 1).position);
                 }
                 switch (_axis)
                 {
-                    case Axis.X: bottomPosition.x = _symmetry ? -localSamplePosition.x : 0f; heightPercent = uvScale.y * Mathf.Abs(localSamplePosition.x); avgTop += localSamplePosition.x; break;
+                    case Axis.X: bottomPosition.x = _symmetry ? -localSamplePosition.x : 0f;  heightPercent = uvScale.y * Mathf.Abs(localSamplePosition.x); avgTop += localSamplePosition.x; break;
                     case Axis.Y: bottomPosition.y = _symmetry ? -localSamplePosition.y : 0f;  heightPercent = uvScale.y * Mathf.Abs(localSamplePosition.y); avgTop += localSamplePosition.y; break;
                     case Axis.Z: bottomPosition.z = _symmetry ? -localSamplePosition.z : 0f;  heightPercent = uvScale.y * Mathf.Abs(localSamplePosition.z); avgTop += localSamplePosition.z; break;
                 }
@@ -142,16 +144,16 @@ namespace Dreamteck.Splines
                 for (int n = 0; n < _slices + 1; n++)
                 {
                     float slicePercent = ((float)n / _slices);
-                    tsMesh.vertices[vertIndex] = Vector3.Lerp(bottomPosition, samplePosition, slicePercent) + normal * offset.y + offsetRight * offset.x;
+                    tsMesh.vertices[vertIndex] = Vector3.Lerp(bottomPosition, samplePosition, slicePercent) + normal * (offset.y * resultSize) + offsetRight * (offset.x * resultSize);
                     tsMesh.normals[vertIndex] = right;
                     switch (_uvWrapMode)
                     {
-                        case UVWrapMode.Clamp: tsMesh.uv[vertIndex] = new Vector2((float)GetSampleRaw(i).percent * uvScale.x + uvOffset.x, slicePercent * uvScale.y + uvOffset.y); break;
+                        case UVWrapMode.Clamp: tsMesh.uv[vertIndex] = new Vector2((float)evalResult.percent * uvScale.x + uvOffset.x, slicePercent * uvScale.y + uvOffset.y); break;
                         case UVWrapMode.UniformX: tsMesh.uv[vertIndex] = new Vector2(totalLength * uvScale.x + uvOffset.x, slicePercent * uvScale.y + uvOffset.y); break;
-                        case UVWrapMode.UniformY: tsMesh.uv[vertIndex] = new Vector2((float)GetSampleRaw(i).percent * uvScale.x + uvOffset.x, heightPercent * slicePercent * uvScale.y + uvOffset.y); break;
+                        case UVWrapMode.UniformY: tsMesh.uv[vertIndex] = new Vector2((float)evalResult.percent * uvScale.x + uvOffset.x, heightPercent * slicePercent * uvScale.y + uvOffset.y); break;
                         case UVWrapMode.Uniform: tsMesh.uv[vertIndex] = new Vector2(totalLength * uvScale.x + uvOffset.x, heightPercent * slicePercent * uvScale.y + uvOffset.y); break;
                     }
-                    tsMesh.colors[vertIndex] = GetSampleRaw(i).color * color;
+                    tsMesh.colors[vertIndex] = GetBaseColor(evalResult) * color;
                     vertIndex++;
                 }
             }

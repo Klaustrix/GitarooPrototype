@@ -23,6 +23,7 @@ namespace Dreamteck
         public int[] triangles = new int[0];
         public List<int[]> subMeshes = new List<int[]>();
         public TS_Bounds bounds = new TS_Bounds(Vector3.zero, Vector3.zero);
+        public UnityEngine.Rendering.IndexFormat indexFormat = UnityEngine.Rendering.IndexFormat.UInt16;
 
         public volatile bool hasUpdate = false;
 
@@ -63,6 +64,7 @@ namespace Dreamteck
             uv4 = mesh.uv4;
             triangles = mesh.triangles;
             bounds = new TS_Bounds(mesh.bounds);
+            indexFormat = mesh.indexFormat;
             for (int i = 0; i < mesh.subMeshCount; i++)
             {
                 subMeshes.Add(mesh.GetTriangles(i));
@@ -298,6 +300,7 @@ namespace Dreamteck
                 input.subMeshes[i].CopyTo(result.subMeshes[i], 0);
             }
             result.bounds = new TS_Bounds(input.bounds.center, input.bounds.size);
+            result.indexFormat = input.indexFormat;
             return result;
         }
 
@@ -346,26 +349,27 @@ namespace Dreamteck
         public void WriteMesh(ref Mesh input)
         {
             if (input == null) input = new Mesh();
-            if (vertices == null || vertices.Length <= 65000)
+            input.Clear();
+            input.indexFormat = indexFormat;
+            input.vertices = vertices;
+            input.normals = normals;
+            if (tangents.Length == vertices.Length) input.tangents = tangents;
+            if (colors.Length == vertices.Length) input.colors = colors;
+            if (uv.Length == vertices.Length) input.uv = uv;
+            if (uv2.Length == vertices.Length) input.uv2 = uv2;
+            if (uv3.Length == vertices.Length) input.uv3 = uv3;
+            if (uv4.Length == vertices.Length) input.uv4 = uv4;
+            input.triangles = triangles;
+            if (subMeshes.Count > 0)
             {
-                input.Clear();
-                input.vertices = vertices;
-                input.normals = normals;
-                if (tangents.Length == vertices.Length) input.tangents = tangents;
-                if (colors.Length == vertices.Length) input.colors = colors;
-                if(uv.Length == vertices.Length) input.uv = uv;
-                if (uv2.Length == vertices.Length) input.uv2 = uv2;
-                if (uv3.Length == vertices.Length) input.uv3 = uv3;
-                if (uv4.Length == vertices.Length) input.uv4 = uv4;
-                input.triangles = triangles;
-                if (subMeshes.Count > 0)
+                input.subMeshCount = subMeshes.Count;
+                for (int i = 0; i < subMeshes.Count; i++)
                 {
-                    input.subMeshCount = subMeshes.Count;
-                    for (int i = 0; i < subMeshes.Count; i++) input.SetTriangles(subMeshes[i], i);
+                    input.SetTriangles(subMeshes[i], i);
                 }
-                input.RecalculateBounds();
-                hasUpdate = false;
             }
+            input.RecalculateBounds();
+            hasUpdate = false;
         }
     }
 }

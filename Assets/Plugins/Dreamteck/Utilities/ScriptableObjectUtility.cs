@@ -6,21 +6,21 @@ namespace Dreamteck {
 
     public static class ScriptableObjectUtility
     {
-        public static ScriptableObject CreateAsset<T>(string name = "") where T : ScriptableObject
+        public static T CreateAsset<T>(string name = "", bool selectAfterCreation = true) where T : ScriptableObject
         {
             T asset = ScriptableObject.CreateInstance<T>();
-            SaveAsset<T>(asset, name);
+            SaveAsset(asset, name, selectAfterCreation);
             return asset;
         }
 
-        public static ScriptableObject CreateAsset(string type, string name = "")
+        public static ScriptableObject CreateAsset(string type, string name = "", bool selectAfterCreation = true)
         {
             ScriptableObject asset = ScriptableObject.CreateInstance(type);
-            SaveAsset<ScriptableObject>(asset, name);
+            SaveAsset<ScriptableObject>(asset, name, selectAfterCreation);
             return asset;
         }
 
-        static void SaveAsset<T>(T asset, string name = "") where T : ScriptableObject
+        static void SaveAsset<T>(T asset, string name = "", bool selectAfterCreation = true) where T : ScriptableObject
         {
             string path = AssetDatabase.GetAssetPath(Selection.activeObject);
             if (path == "")
@@ -33,13 +33,20 @@ namespace Dreamteck {
             }
             string assetName = "New " + typeof(T).ToString();
             if (name != "") assetName = name;
-            string assetPathAndName = AssetDatabase.GenerateUniqueAssetPath(path + "/" + assetName + ".asset");
+            if(!path.EndsWith("/"))
+            {
+                path += "/";
+            }
+            string assetPathAndName = AssetDatabase.GenerateUniqueAssetPath(path + assetName + ".asset");
             AssetDatabase.CreateAsset(asset, assetPathAndName);
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             EditorUtility.FocusProjectWindow();
-            Selection.activeObject = asset;
+            if (selectAfterCreation)
+            {
+                Selection.activeObject = asset;
+            }
         }
     }
 }

@@ -95,11 +95,29 @@ namespace Dreamteck.Splines
             {
                 if (value != _extrudeSpline)
                 {
-                    if (_extrudeSpline != null) _extrudeSpline.Unsubscribe(this);
+                    if (_extrudeSpline != null)
+                    {
+                        _extrudeSpline.Unsubscribe(this);
+                    }
                     _extrudeSpline = value;
-                    if (value != null) _extrudeSpline.Subscribe(this);
+                    if (value != null)
+                    {
+                        _extrudeSpline.Subscribe(this);
+                    }
                     Rebuild();
                 }
+            }
+        }
+
+        public Vector3 extrudeOffset
+        {
+            get { return _extrudeOffset; }
+            set { 
+                if(value != _extrudeOffset)
+                {
+                    _extrudeOffset = value;
+                    Rebuild();
+                } 
             }
         }
 
@@ -133,6 +151,9 @@ namespace Dreamteck.Splines
         private SplineComputer _extrudeSpline;
         [SerializeField]
         [HideInInspector]
+        private Vector3 _extrudeOffset = Vector3.zero;
+        [SerializeField]
+        [HideInInspector]
         private SplineSample[] extrudeResults = new SplineSample[0];
         [SerializeField]
         [HideInInspector]
@@ -160,10 +181,17 @@ namespace Dreamteck.Splines
         [HideInInspector]
         private bool _uniformUvs = false;
 
+        private Vector3 _trsRight = Vector3.right;
+        private Vector3 _trsUp = Vector3.up;
+        private Vector3 _trsForward = Vector3.forward;
+
         protected override void Awake()
         {
             base.Awake();
             mesh.name = "surface";
+            _trsRight = trs.right;
+            _trsUp = trs.up;
+            _trsForward = trs.forward;
         }
 
         protected override void BuildMesh()
@@ -173,13 +201,35 @@ namespace Dreamteck.Splines
             Generate();
         }
 
+        private void LateUpdate()
+        {
+            if (multithreaded && trs.hasChanged)
+            {
+                _trsRight = trs.right;
+                _trsUp = trs.up;
+                _trsForward = trs.forward;
+            }
+        }
+
         public void Generate()
         {
+            if (!multithreaded)
+            {
+                _trsRight = trs.right;
+                _trsUp = trs.up;
+                _trsForward = trs.forward;
+            }
             int surfaceVertexCount = sampleCount;
             if (spline.isClosed) surfaceVertexCount--;
             int vertexCount = surfaceVertexCount;
 
-            if (_extrudeSpline) _extrudeSpline.Evaluate(ref extrudeResults, _extrudeFrom, _extrudeTo);
+            if (_extrudeSpline != null)
+            {
+                _extrudeSpline.Evaluate(ref extrudeResults, _extrudeFrom, _extrudeTo);
+            } else if(extrudeResults.Length > 0)
+            {
+                extrudeResults = new SplineSample[0];
+            }
             bool pathExtrude = _extrudeSpline && extrudeResults.Length > 0;
             bool simpleExtrude = !pathExtrude && _extrude != 0f;
 
@@ -218,9 +268,8 @@ namespace Dreamteck.Splines
                 totalTrisCount *= 2;
                 totalTrisCount += extrudeResults .Length * sampleCount * 2 * 3;
             }
-
             AllocateMesh(vertexCount, totalTrisCount);
-            Vector3 off = trs.right * offset.x + trs.up * offset.y + trs.forward * offset.z;
+            Vector3 off = _trsRight * offset.x + _trsUp * offset.y + _trsForward * offset.z;
             for (int i = 0; i < surfaceVertexCount; i++)
             {
                 GetSample(i, evalResult);
@@ -271,12 +320,14 @@ namespace Dreamteck.Splines
                 //Generate cap vertices with flipped normals
                 for (int i = 0; i < surfaceVertexCount; i++)
                 {
-                    tsMesh.vertices[i + surfaceVertexCount] = extrudeResults[0].position + extrudeResults[0].rotation * identityVertices[i] + off;
+                    Vector3 vertexOffset = TransformOffset(extrudeResults[0], _extrudeOffset);
+                    tsMesh.vertices[i + surfaceVertexCount] = extrudeResults[0].position + (extrudeResults[0].rotation * identityVertices[i] + off) + vertexOffset;
                     tsMesh.normals[i + surfaceVertexCount] = -extrudeResults[0].forward;
                     tsMesh.colors[i + surfaceVertexCount] = tsMesh.colors[i] * extrudeResults[0].color;
                     tsMesh.uv[i + surfaceVertexCount] = new Vector2(1f - tsMesh.uv[i].x, tsMesh.uv[i].y);
 
-                    tsMesh.vertices[i] = extrudeResults[extrudeResults.Length - 1].position + extrudeResults[extrudeResults.Length - 1].rotation * identityVertices[i] + off;
+                    vertexOffset = TransformOffset(extrudeResults[extrudeResults.Length - 1], _extrudeOffset);
+                    tsMesh.vertices[i] = extrudeResults[extrudeResults.Length - 1].position + (extrudeResults[extrudeResults.Length - 1].rotation * identityVertices[i] + off) + vertexOffset;
                     tsMesh.normals[i] = extrudeResults[extrudeResults.Length - 1].forward;
                     tsMesh.colors[i] *= extrudeResults[extrudeResults.Length - 1].color;
                 }
@@ -288,7 +339,8 @@ namespace Dreamteck.Splines
                     int startIndex = surfaceVertexCount * 2 + i * sampleCount;
                     for (int n = 0; n < identityVertices.Length; n++)
                     {
-                        tsMesh.vertices[startIndex + n] = extrudeResults[i].position + extrudeResults[i].rotation * identityVertices[n] + off;
+                        Vector3 vertexOffset = TransformOffset(extrudeResults[i], _extrudeOffset);
+                        tsMesh.vertices[startIndex + n] = extrudeResults[i].position + (extrudeResults[i].rotation * identityVertices[n] + off) + vertexOffset;
                         tsMesh.normals[startIndex + n] = extrudeResults[i].rotation * identityNormals[n];
                         if (_uniformUvs) tsMesh.uv[startIndex + n] = new Vector2((float)n / (identityVertices.Length - 1) * _sideUvScale.x + _sideUvOffset.x, totalLength * _sideUvScale.y + _sideUvOffset.y);
                         else tsMesh.uv[startIndex + n] = new Vector2((float)n / (identityVertices.Length - 1) * _sideUvScale.x + _sideUvOffset.x, (float)i / (extrudeResults.Length - 1) * _sideUvScale.y + _sideUvOffset.y);
@@ -403,7 +455,7 @@ namespace Dreamteck.Splines
         {
             center = Vector3.zero;
             normal = Vector3.zero;
-            Vector3 off = trs.right * offset.x + trs.up * offset.y + trs.forward * offset.z;
+            Vector3 off = _trsRight * offset.x + _trsUp * offset.y + _trsForward * offset.z;
             for (int i = 0; i < count; i++)
             {
                 center += GetSampleRaw(i).position + off;

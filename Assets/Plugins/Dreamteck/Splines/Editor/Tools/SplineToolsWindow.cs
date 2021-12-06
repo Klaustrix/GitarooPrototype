@@ -49,7 +49,8 @@ namespace Dreamteck.Splines.Editor
             GUILayout.BeginHorizontal();
             GUILayout.BeginScrollView(scroll, GUILayout.Width(menuWidth), GUILayout.Height(position.height-10));
             if (tools == null) Init();
-            for(int i = 0; i < tools.Length; i ++)
+            SplineEditorGUI.SetHighlightColors(SplinePrefs.highlightColor, SplinePrefs.highlightContentColor);
+            for (int i = 0; i < tools.Length; i ++)
             {
                 if (SplineEditorGUI.EditorLayoutSelectableButton(new GUIContent(tools[i].GetName()), true, toolIndex == i))
                 {

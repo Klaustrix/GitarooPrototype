@@ -63,6 +63,15 @@ namespace Dreamteck.Splines.Editor
                 for (int i = 0; i < indices.Count; i++) nodes[i].AddConnection(spline, indices[i] + 1);
             }
 
+            if (closeSpline)
+            {
+                editor.isClosed = true;
+            }
+            dsEditor.UpdateSpline();
+            if (appendMode == AppendMode.Beginning)
+            {
+                spline.ShiftNodes(0, spline.pointCount - 1, 1);
+            }
             if (createNode)
             {
                 if (appendMode == 0)
@@ -74,12 +83,6 @@ namespace Dreamteck.Splines.Editor
                     CreateNodeForPoint(points.Length - 1);
                 }
             }
-            if (closeSpline)
-            {
-                editor.isClosed = true;
-            }
-            dsEditor.UpdateSpline();
-            if (appendMode == AppendMode.Beginning) spline.ShiftNodes(0, spline.pointCount-1, 1);
         }
 
         protected override void InsertMode(Vector3 screenCoordinates)
@@ -100,8 +103,8 @@ namespace Dreamteck.Splines.Editor
                 newPoint.color = evalResult.color;
                 newPoint.normal = evalResult.up;
                 SplinePoint[] newPoints = new SplinePoint[points.Length + 1];
-                double floatIndex = (points.Length - 1) * percent;
-                int pointIndex = Mathf.Clamp(DMath.FloorInt(floatIndex), 0, points.Length - 2);
+                
+                int pointIndex = dsEditor.spline.PercentToPointIndex(percent);
                 for (int i = 0; i < newPoints.Length; i++)
                 {
                     if (i <= pointIndex) newPoints[i] = points[i];
@@ -125,6 +128,9 @@ namespace Dreamteck.Splines.Editor
             Node node = obj.AddComponent<Node>();
             node.transform.localRotation = Quaternion.identity;
             node.transform.position = points[index].position;
+            Undo.SetCurrentGroupName("Create Node For Point " + index);
+            Undo.RegisterCreatedObjectUndo(obj, "Create Node object");
+            Undo.RegisterCompleteObjectUndo(dsEditor.spline, "Link Node");
             dsEditor.spline.ConnectNode(node, index);
         }
     }

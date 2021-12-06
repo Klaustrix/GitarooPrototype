@@ -8,16 +8,33 @@ namespace Dreamteck.Splines
     [AddComponentMenu("Dreamteck/Splines/Users/Particle Controller")]
     public class ParticleController : SplineUser
     {
+        public ParticleSystem particleSystemComponent
+        {
+            get { return _particleSystem; }
+            set { 
+                _particleSystem = value;
+                _renderer = _particleSystem.GetComponent<ParticleSystemRenderer>();
+            }
+        }
+
+        [SerializeField]
         [HideInInspector]
-        public ParticleSystem _particleSystem;
+        private ParticleSystem _particleSystem;
+        private ParticleSystemRenderer _renderer;
         public enum EmitPoint { Beginning, Ending, Random, Ordered }
         public enum MotionType { None, UseParticleSystem, FollowForward, FollowBackward, ByNormal, ByNormalRandomized }
         public enum Wrap { Default, Loop }
 
         [HideInInspector]
+        public bool pauseWhenNotVisible = false;
+        [HideInInspector]
+        public Vector2 offset = Vector2.zero;
+        [HideInInspector]
         public bool volumetric = false;
         [HideInInspector]
         public bool emitFromShell = false;
+        [HideInInspector]
+        public bool apply3DRotation = false;
         [HideInInspector]
         public Vector2 scale = Vector2.one;
         [HideInInspector]
@@ -39,7 +56,15 @@ namespace Dreamteck.Splines
         protected override void LateRun()
         {
             if (_particleSystem == null) return;
-            if (sampleCount == 0) return;
+            if (pauseWhenNotVisible)
+            {
+                if (_renderer == null)
+                {
+                    _renderer = _particleSystem.GetComponent<ParticleSystemRenderer>();
+                }
+                if (!_renderer.isVisible) return;
+            }
+
             int maxParticles = _particleSystem.main.maxParticles;
             if (particles.Length != maxParticles)
             {
@@ -87,6 +112,10 @@ namespace Dreamteck.Splines
         void TransformParticle(ref ParticleSystem.Particle particle, Transform trs)
         {
             particle.position = trs.TransformPoint(particle.position);
+            if (apply3DRotation)
+            {
+                
+            }
             particle.velocity = trs.TransformDirection(particle.velocity);
         }
 
@@ -108,26 +137,33 @@ namespace Dreamteck.Splines
             float lifePercent = particles[index].remainingLifetime / particles[index].startLifetime;
             if (motionType == MotionType.FollowBackward || motionType == MotionType.FollowForward || motionType == MotionType.None)
             {
-                Evaluate(controllers[index].GetSplinePercent(wrapMode, particles[index]), evalResult);
+                Evaluate(controllers[index].GetSplinePercent(wrapMode, particles[index], motionType), evalResult);
                 ModifySample(evalResult);
+                Vector3 resultRight = -Vector3.Cross(evalResult.forward, evalResult.up);
                 particles[index].position = evalResult.position;
+                if (apply3DRotation)
+                {
+                    particles[index].rotation3D = evalResult.rotation.eulerAngles;
+                }
+                Vector2 finalOffset = offset;
                 if (volumetric)
                 {
-                    Vector3 right = -Vector3.Cross(evalResult.forward, evalResult.up);
-                    Vector2 offset = controllers[index].startOffset;
-                    if (motionType != MotionType.None) offset = Vector2.Lerp(controllers[index].startOffset, controllers[index].endOffset, 1f - lifePercent);
-                    particles[index].position += right * offset.x * scale.x * evalResult.size + evalResult.up * offset.y * scale.y * evalResult.size;
+                    if (motionType != MotionType.None)
+                    {
+                        finalOffset += Vector2.Lerp(controllers[index].startOffset, controllers[index].endOffset, 1f - lifePercent);
+                        finalOffset.x *= scale.x;
+                        finalOffset.y *= scale.y;
+                    } else
+                    {
+                        finalOffset += controllers[index].startOffset;
+                    }
                 }
+                particles[index].position += resultRight * (finalOffset.x * evalResult.size) + evalResult.up * (finalOffset.y * evalResult.size);
                 particles[index].velocity = evalResult.forward;
                 particles[index].startColor = controllers[index].startColor * evalResult.color;
             }
             controllers[index].remainingLifetime = particles[index].remainingLifetime;
             controllers[index].lifeTime = particles[index].startLifetime - particles[index].remainingLifetime;
-        }
-
-        void OnParticleDie(int index)
-        {
-
         }
 
         void OnParticleBorn(int index)
@@ -207,13 +243,18 @@ namespace Dreamteck.Splines
             internal float lifeTime = 0f;
             internal double startPercent = 0.0;
 
-            internal double GetSplinePercent(Wrap wrap, ParticleSystem.Particle particle)
+            internal double GetSplinePercent(Wrap wrap, ParticleSystem.Particle particle, MotionType motionType)
             {
+                float lifePercent = particle.remainingLifetime / particle.startLifetime;
+                if(motionType == MotionType.FollowBackward)
+                {
+                    lifePercent = 1f - lifePercent;
+                }
                 switch (wrap)
                 {
-                    case Wrap.Default: return DMath.Clamp01(startPercent + (1f - particle.remainingLifetime / particle.startLifetime) * cycleSpeed);
+                    case Wrap.Default: return DMath.Clamp01(startPercent + (1f - lifePercent) * cycleSpeed);
                     case Wrap.Loop:
-                        double loopPoint = startPercent + (1.0 - particle.remainingLifetime / particle.startLifetime) * cycleSpeed;
+                        double loopPoint = startPercent + (1.0 - lifePercent) * cycleSpeed;
                         if(loopPoint > 1.0) loopPoint -= Mathf.FloorToInt((float)loopPoint);
                         return loopPoint;
                 }

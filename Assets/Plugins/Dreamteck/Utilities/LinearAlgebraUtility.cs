@@ -25,5 +25,25 @@ namespace Dreamteck
             Vector3 av = value - a;
             return Vector3.Dot(av, ab) / Vector3.Dot(ab, ab);
         }
+
+        public static float DistanceOnSphere(Vector3 from, Vector3 to, float radius)
+        {
+            float distance = 0;
+            
+            if (from == to)
+            {
+                distance = 0;
+            }
+            else if (from == -to)
+            {
+                distance = Mathf.PI * radius;
+            }
+            else
+            {
+                distance = Mathf.Sqrt(2) * radius * Mathf.Sqrt(1.0f - Vector3.Dot(from, to));
+            }
+
+            return distance;
+        }
     }
 }
