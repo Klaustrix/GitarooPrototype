@@ -221,7 +221,17 @@ namespace Dreamteck.Splines {
         private float animClipTo = 1f;
 
         private bool rebuild = false, getSamples = false, postBuild = false;
-        protected Transform trs = null;
+        private Transform _trs = null;
+        private bool _hasTransform = false;
+
+        protected Transform trs
+        {
+            get {  return _trs;  }
+        }
+        protected bool hasTransform
+        {
+            get { return _hasTransform; }
+        }
         public int sampleCount
         {
             get { return _sampleCount; }
@@ -242,6 +252,7 @@ namespace Dreamteck.Splines {
         [HideInInspector]
         public bool buildOnEnable = false;
 
+        public event EmptySplineHandler onPostBuild;
         /// <summary>
         /// Used for migrating the clip range properties from 2.00 and 2.01 to 2.02 and up
         /// </summary>
@@ -256,6 +267,10 @@ namespace Dreamteck.Splines {
         /// </summary>
         public virtual void EditorAwake()
         {
+            if (spline != null)
+            {
+                spline.Subscribe(this);
+            }
             Awake();
             RebuildImmediate();
             GetSamples();
@@ -263,20 +278,23 @@ namespace Dreamteck.Splines {
 #endif
 
         protected virtual void Awake() {
-            trs = transform;
-            if (spline == null)
-            {
-                spline = GetComponent<SplineComputer>();
-            }
+            CacheTransform();
             if (buildOnAwake)
             {
                 RebuildImmediate();
             }
         }
 
+        protected void CacheTransform()
+        {
+            _trs = transform;
+            _hasTransform = true;
+        }
+
         protected virtual void Reset()
         {
 #if UNITY_EDITOR
+            spline = GetComponent<SplineComputer>();
             EditorAwake();
 #endif
         }
@@ -366,13 +384,21 @@ namespace Dreamteck.Splines {
         public virtual void Rebuild()
         {
 #if UNITY_EDITOR
-            if (trs == null) trs = transform;
+            if (!_hasTransform)
+            {
+                CacheTransform();
+            }
+
             //If it's the editor and it's not playing, then rebuild immediate
             if (Application.isPlaying)
             {
                 if (!autoUpdate) return;
                 rebuild = getSamples = true;
-            } else RebuildImmediate();
+            }
+            else
+            {
+                RebuildImmediate();
+            }
 #else
              if (!autoUpdate) return;
              rebuild = getSamples = true;
@@ -386,7 +412,10 @@ namespace Dreamteck.Splines {
         public virtual void RebuildImmediate()
         {
 #if UNITY_EDITOR
-            if (trs == null) trs = transform;
+            if (!_hasTransform)
+            {
+                CacheTransform();
+            }
 #if !UNITY_2018_3_OR_NEWER
             if (PrefabUtility.GetPrefabType(gameObject) == PrefabType.Prefab) return;
 #endif
@@ -396,7 +425,8 @@ namespace Dreamteck.Splines {
                 GetSamples();
                 Build();
                 PostBuild();
-            } catch (System.Exception ex)
+            } 
+            catch (System.Exception ex)
             {
                 Debug.Log(ex.Message);
             }
@@ -467,18 +497,30 @@ namespace Dreamteck.Splines {
             if (postBuild)
             {
                 PostBuild();
+                if(onPostBuild != null)
+                {
+                    onPostBuild();
+                }
                 postBuild = false;
             }
         }
 
         void BuildThreaded()
         {
+            while (postBuild)
+            {
+                //Wait if the main thread is still running post build operations
+            }
             Build();
             postBuild = true;
         }
 
         void ResampleAndBuildThreaded()
         {
+            while (postBuild)
+            {
+                //Wait if the main thread is still running post build operations
+            }
             GetSamples();
             Build();
             postBuild = true;
@@ -742,7 +784,7 @@ namespace Dreamteck.Splines {
             return sampleCollection.CalculateLengthWithOffset(offset, UnclipPercent(from), UnclipPercent(to));
         }
 
-        public void OnBeforeSerialize()
+        public virtual void OnBeforeSerialize()
         {
             //Backwards compatibility
             sampleCollection.clipFrom = _clipFrom;
@@ -750,7 +792,7 @@ namespace Dreamteck.Splines {
             sampleCollection.loopSamples = _loopSamples;
         }
 
-        public void OnAfterDeserialize()
+        public virtual void OnAfterDeserialize()
         {
             //Backwards compatibility
             if (!_isUpdated)
@@ -764,6 +806,17 @@ namespace Dreamteck.Splines {
                     spline.Subscribe(this);
                 }
             }
+        }
+
+        /// <summary>
+        /// Returns the offset transformed by the sample
+        /// </summary>
+        /// <param name="sample">Source sample</param>
+        /// <param name="localOffset">Local offset to apply</param>
+        /// <returns></returns>
+        protected static Vector3 TransformOffset(SplineSample sample, Vector3 localOffset)
+        {
+            return (sample.right * localOffset.x + sample.up * localOffset.y + sample.forward * localOffset.z) * sample.size;
         }
     }
 }

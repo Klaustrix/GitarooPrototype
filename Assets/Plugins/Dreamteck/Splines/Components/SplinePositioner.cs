@@ -31,16 +31,21 @@ namespace Dreamteck.Splines
         {
             get
             {
-                return _position;
+                return _result.percent;
             }
             set
             {
                 if (value != _position)
                 {
-                    animPosition = (float)value;
-                    _position = value;
-                    if (mode == Mode.Distance) SetDistance((float)_position, true);
-                    else SetPercent(_position, true);
+                    _position = (float)value;
+                    if (mode == Mode.Distance)
+                    {
+                        SetDistance(_position, true);
+                    }
+                    else
+                    {
+                        SetPercent(value, true);
+                    }
                 }
             }
         }
@@ -63,17 +68,26 @@ namespace Dreamteck.Splines
         private GameObject _targetObject;
         [SerializeField]
         [HideInInspector]
-        private double _position = 0.0;
-        [SerializeField]
-        [HideInInspector]
-        private float animPosition = 0f;
+        private float _position = 0f;
         [SerializeField]
         [HideInInspector]
         private Mode _mode = Mode.Percent;
+        private float _lastPosition = 0f;
 
         protected override void OnDidApplyAnimationProperties()
         {
-            if (animPosition != _position) position = animPosition;
+            if (_lastPosition != _position)
+            {
+                _lastPosition = _position;
+                if (mode == Mode.Distance)
+                {
+                    SetDistance(_position, true);
+                }
+                else
+                {
+                    SetPercent(_position, true);
+                }
+            }
             base.OnDidApplyAnimationProperties();
         }
 
@@ -102,7 +116,7 @@ namespace Dreamteck.Splines
         public override void SetPercent(double percent, bool checkTriggers = false, bool handleJuncitons = false)
         {
             base.SetPercent(percent, checkTriggers, handleJuncitons);
-            _position = percent;
+            _position = (float)percent;
         }
 
         public override void SetDistance(float distance, bool checkTriggers = false, bool handleJuncitons = false)

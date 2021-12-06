@@ -270,7 +270,13 @@ namespace Dreamteck.Splines
             float moveExcess = 0f;
             if (moved > distance) moveExcess = moved - distance;
 
-            double p = DMath.Lerp(lastPercent, samples[sampleIndex].percent, 1f - moveExcess / lastDistance);
+
+            double lerpPercent = 0.0;
+            if(lastDistance > 0.0)
+            {
+                lerpPercent = moveExcess / lastDistance;
+            }
+            double p = DMath.Lerp(lastPercent, samples[sampleIndex].percent, 1f - lerpPercent);
             moved -= moveExcess;
             return p;
         }
@@ -294,7 +300,7 @@ namespace Dreamteck.Splines
             if (distance == 0f) return lastPercent;
 
             Evaluate(start, _workSample);
-            Vector3 lastPos = _workSample.position + _workSample.up * offset.y * _workSample.size + _workSample.right * offset.x * _workSample.size + _workSample.forward * offset.z * _workSample.size;
+            Vector3 lastPos = _workSample.position + _workSample.up * (offset.y * _workSample.size) + _workSample.right * (offset.x * _workSample.size) + _workSample.forward * (offset.z * _workSample.size);
 
             int sampleIndex;
             double lerp;
@@ -315,7 +321,7 @@ namespace Dreamteck.Splines
 
             while (moved < distance)
             {
-                Vector3 newPos = samples[sampleIndex].position + samples[sampleIndex].up * offset.y * samples[sampleIndex].size + samples[sampleIndex].right * offset.x * samples[sampleIndex].size + samples[sampleIndex].forward * offset.z * samples[sampleIndex].size;
+                Vector3 newPos = samples[sampleIndex].position + samples[sampleIndex].up * (offset.y * samples[sampleIndex].size) + samples[sampleIndex].right * (offset.x * samples[sampleIndex].size) + samples[sampleIndex].forward * (offset.z * samples[sampleIndex].size);
                 lastDistance = Vector3.Distance(newPos, lastPos);
                 moved += lastDistance;
                 if (moved >= distance)
@@ -330,7 +336,7 @@ namespace Dreamteck.Splines
                     {
                         if (samplesAreLooped)
                         {
-                            lastPos = samples[0].position + samples[0].up * offset.y * samples[0].size + samples[0].right * offset.x * samples[0].size + samples[0].forward * offset.z * samples[0].size;
+                            lastPos = samples[0].position + samples[0].up * (offset.y * samples[0].size) + samples[0].right * (offset.x * samples[0].size) + samples[0].forward * (offset.z * samples[0].size);
                             lastPercent = samples[0].percent;
                             sampleIndex = 1;
                         }
@@ -346,7 +352,7 @@ namespace Dreamteck.Splines
                         if (samplesAreLooped)
                         {
                             int lastIndex = Count - 1;
-                            lastPos = samples[lastIndex].position + samples[lastIndex].up * offset.y * samples[lastIndex].size + samples[lastIndex].right * offset.x * samples[lastIndex].size + samples[lastIndex].forward * offset.z * samples[lastIndex].size;
+                            lastPos = samples[lastIndex].position + samples[lastIndex].up * (offset.y * samples[lastIndex].size) + samples[lastIndex].right * (offset.x * samples[lastIndex].size) + samples[lastIndex].forward * (offset.z * samples[lastIndex].size);
                             lastPercent = samples[lastIndex].percent;
                             sampleIndex = Count - 2;
                         }
@@ -394,7 +400,7 @@ namespace Dreamteck.Splines
             }
             Spline.FormatFromTo(ref from, ref to);
             //First make a very rough sample of the from-to region 
-            int steps = (controlPointCount - 1) * 6; //Sampling six points per segment is enough to find the closest point range
+            int steps = (controlPointCount - 1) * 4; //Sampling four points per segment is enough to find the closest point range
             int step = Count / steps;
             if (step < 1) step = 1;
             float minDist = (position - samples[0].position).sqrMagnitude;
@@ -411,10 +417,11 @@ namespace Dreamteck.Splines
             int checkTo = toIndex;
 
             //Find the closest point range which will be checked in detail later
-            for (int i = fromIndex; i <= toIndex; i += step)
+            for (int i = fromIndex; i < toIndex; i += step)
             {
-                if (i > toIndex) i = toIndex;
-                float dist = (position - samples[i].position).sqrMagnitude;
+                if (i >= toIndex) i = toIndex-1;
+                Vector3 projected = LinearAlgebraUtility.ProjectOnLine(samples[i].position, samples[Mathf.Min(i + step, toIndex)].position, position);
+                float dist = (position - projected).sqrMagnitude;
                 if (dist < minDist)
                 {
                     minDist = dist;
@@ -537,7 +544,7 @@ namespace Dreamteck.Splines
             Spline.FormatFromTo(ref from, ref to);
             float length = 0f;
             Evaluate(from, _workSample);
-            Vector3 pos = _workSample.position + _workSample.up * offset.y * _workSample.size + _workSample.right * offset.x * _workSample.size + _workSample.forward * offset.z * _workSample.size;
+            Vector3 pos = _workSample.position + _workSample.up * (offset.y * _workSample.size) + _workSample.right * (offset.x * _workSample.size) + _workSample.forward * (offset.z * _workSample.size);
             int fromIndex, toIndex;
             double lerp;
             GetSamplingValues(from, out fromIndex, out lerp);
@@ -550,13 +557,13 @@ namespace Dreamteck.Splines
 
             for (int i = fromIndex + 1; i < toIndex; i++)
             {
-                Vector3 newPos = samples[i].position + samples[i].up * offset.y * samples[i].size + samples[i].right * offset.x * samples[i].size + samples[i].forward * offset.z * samples[i].size;
+                Vector3 newPos = samples[i].position + samples[i].up * (offset.y * samples[i].size) + samples[i].right * (offset.x * samples[i].size) + samples[i].forward * (offset.z * samples[i].size);
                 length += Vector3.Distance(newPos, pos);
                 pos = newPos;
             }
 
             Evaluate(to, _workSample);
-            _workSample.position += _workSample.up * offset.y * _workSample.size + _workSample.right * offset.x * _workSample.size + _workSample.forward * offset.z * _workSample.size;
+            _workSample.position += _workSample.up * (offset.y * _workSample.size) + _workSample.right * (offset.x * _workSample.size) + _workSample.forward * (offset.z * _workSample.size);
             length += Vector3.Distance(_workSample.position, pos);
             return length;
         }

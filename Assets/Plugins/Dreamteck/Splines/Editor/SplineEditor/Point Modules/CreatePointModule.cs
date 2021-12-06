@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
     public class CreatePointModule : PointModule
     {
-        public enum AppendMode { Beginning, End }
+        public enum AppendMode { Beginning = 0, End = 1}
         public enum PlacementMode { YPlane, XPlane, ZPlane, CameraPlane, Surface, Insert }
         public enum NormalMode { Default, LookAtCamera, AlignWithCamera, Calculate, Left, Right, Up, Down, Forward, Back }
         protected PlacementMode placementMode = PlacementMode.YPlane;
@@ -15,6 +15,8 @@ using System.Collections.Generic;
         public float offset = 0f;
         public NormalMode normalMode = NormalMode.Default;
         public LayerMask surfaceLayerMask = new LayerMask();
+        public float createPointSize = 1f;
+        public Color createPointColor = Color.white;
         protected Spline visualizer;
         protected Camera editorCamera;
         protected Vector3 createPoint = Vector3.zero, createNormal = Vector3.up;
@@ -41,7 +43,7 @@ using System.Collections.Generic;
             base.LoadState();
             normalMode = (NormalMode)LoadInt("normalMode");
             placementMode = (PlacementMode)LoadInt("placementMode");
-            appendMode = (AppendMode)LoadInt("appendMode");
+            appendMode = (AppendMode)LoadInt("appendMode", 1);
             offset = LoadFloat("offset");
             surfaceLayerMask = LoadInt("surfaceLayerMask", ~0);
         }
@@ -173,8 +175,8 @@ using System.Collections.Generic;
         protected void AddPoint()
         {
             SplinePoint newPoint = new SplinePoint(createPoint, createPoint);
-            newPoint.size = SplinePrefs.createPointSize;
-            newPoint.color = SplinePrefs.createPointColor;
+            newPoint.size = createPointSize;
+            newPoint.color = createPointColor;
             SplinePoint[] newPoints = new SplinePoint[points.Length];
             points.CopyTo(newPoints, 0);
             if (appendMode == AppendMode.End)
@@ -202,7 +204,11 @@ using System.Collections.Generic;
                     lastCreated = 0;
                 }
             }
-            if (isClosed) newPoints[newPoints.Length - 1] = newPoints[0];
+
+            if (isClosed)
+            {
+                newPoints[newPoints.Length - 1] = newPoints[0];
+            }
             points = newPoints;
             SetPointNormal(lastCreated, createNormal);
             SelectPoint(lastCreated);

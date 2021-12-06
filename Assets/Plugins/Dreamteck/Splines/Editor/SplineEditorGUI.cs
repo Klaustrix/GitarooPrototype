@@ -54,6 +54,7 @@ namespace Dreamteck.Splines.Editor
         private static bool[] controlStates = new bool[0];
         private static string[] floatFieldContents = new string[0];
         private static int controlIndex = 0;
+
         public static float scale = 1f;
         public static Texture2D white
         {
@@ -273,8 +274,8 @@ namespace Dreamteck.Splines.Editor
                 GUI.color = activeColor;
                 if (selected)
                 {
-                    GUI.backgroundColor = SplinePrefs.highlightColor;
-                    GUI.contentColor = SplinePrefs.highlightContentColor;
+                    GUI.backgroundColor = highLightBGColor;
+                    GUI.contentColor = highlightContentColor;
                     selectedStyle = new GUIStyle(selectedStyle);
                     selectedStyle.normal.textColor = Color.white;
                     selectedStyle.hover.textColor = Color.white;
@@ -310,7 +311,8 @@ namespace Dreamteck.Splines.Editor
             }
         }
 
-       public static double ScreenPointToSplinePercent(SplineComputer computer, Vector2 screenPoint)
+#if DREAMTECK_SPLINES
+        public static double ScreenPointToSplinePercent(SplineComputer computer, Vector2 screenPoint)
         {
             SplinePoint[] points = computer.GetPoints();
             float closestDistance = (screenPoint - HandleUtility.WorldToGUIPoint(points[0].position)).sqrMagnitude;
@@ -332,5 +334,6 @@ namespace Dreamteck.Splines.Editor
             }
             return closestPercent;
         }
+#endif
     }
 }

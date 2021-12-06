@@ -10,15 +10,21 @@ namespace Dreamteck.Splines.Editor
     [InitializeOnLoad]
     public static class PluginInfo
     {
-        public static string version = "2.02";
+        public static string version = "2.12";
         private static bool open = false;
         static PluginInfo()
         {
             if (open) return;
             bool showInfo = EditorPrefs.GetString("Dreamteck.Splines.Info.version", "") != version;
             if (!showInfo) return;
-            EditorWindow.GetWindow<WelcomeScreen>(true);
             EditorPrefs.SetString("Dreamteck.Splines.Info.version", version);
+            EditorApplication.update += OpenWindowOnUpdate;
+        }
+
+        private static void OpenWindowOnUpdate()
+        {
+            EditorApplication.update -= OpenWindowOnUpdate;
+            EditorWindow.GetWindow<WelcomeScreen>(true);      
             open = true;
         }
     }

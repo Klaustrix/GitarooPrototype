@@ -1,11 +1,9 @@
-﻿using UnityEngine;
-using System.Collections;
-using System;
-using System.Reflection;
-using System.Collections.Generic;
-
-namespace Dreamteck
+﻿namespace Dreamteck
 {
+    using UnityEngine;
+    using System;
+    using System.Reflection;
+    using System.Collections.Generic;
     public static class FindDerivedClasses
     {
         public static List<Type> GetAllDerivedClasses(this Type aBaseClass, string[] aExcludeAssemblies)
@@ -13,7 +11,6 @@ namespace Dreamteck
             List<Type> result = new List<Type>();
             foreach (Assembly A in AppDomain.CurrentDomain.GetAssemblies())
             {
-                if (A is System.Reflection.Emit.AssemblyBuilder) continue;
                 bool exclude = false;
                 foreach (string S in aExcludeAssemblies)
                 {
@@ -24,22 +21,38 @@ namespace Dreamteck
                     }
                 }
                 if (exclude)
-                    continue;
-                if (aBaseClass.IsInterface)
                 {
-                    foreach (Type C in A.GetExportedTypes())
-                        foreach (Type I in C.GetInterfaces())
-                            if (aBaseClass == I)
+                    continue;
+                }
+                try
+                {
+                    if (aBaseClass.IsInterface)
+                    {
+                        foreach (Type C in A.GetExportedTypes())
+                        {
+                            foreach (Type I in C.GetInterfaces())
+                            {
+                                if (aBaseClass == I)
+                                {
+                                    result.Add(C);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        foreach (Type C in A.GetExportedTypes())
+                        {
+                            if (C.IsSubclassOf(aBaseClass))
                             {
                                 result.Add(C);
-                                break;
                             }
-                }
-                else
+                        }
+                    }
+                } catch
                 {
-                    foreach (Type C in A.GetExportedTypes())
-                        if (C.IsSubclassOf(aBaseClass))
-                            result.Add(C);
+                    Debug.LogWarning("Dreamteck was unable to scan " + A.FullName + " for derived classes");
                 }
             }
             return result;

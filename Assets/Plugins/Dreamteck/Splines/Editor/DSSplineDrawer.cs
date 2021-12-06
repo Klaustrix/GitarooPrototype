@@ -23,11 +23,7 @@ namespace Dreamteck.Splines.Editor
 #endif
 
             FindComputers();
-#if UNITY_2018_1_OR_NEWER
             EditorApplication.hierarchyChanged += HerarchyWindowChanged;
-#else
-            EditorApplication.hierarchyWindowChanged += HerarchyWindowChanged;
-#endif
             EditorApplication.playModeStateChanged += ModeChanged;
         }
 
@@ -63,7 +59,7 @@ namespace Dreamteck.Splines.Editor
             }
             for (int i = 0; i < drawComputers.Count; i++)
             {
-                if (!drawComputers[i].alwaysDraw)
+                if (!drawComputers[i].editorAlwaysDraw)
                 {
                     drawComputers.RemoveAt(i);
                     i--;
@@ -76,7 +72,7 @@ namespace Dreamteck.Splines.Editor
         public static void RegisterComputer(SplineComputer comp)
         {
             if (drawComputers.Contains(comp)) return;
-            comp.alwaysDraw = true;
+            comp.editorAlwaysDraw = true;
             drawComputers.Add(comp);
         }
 
@@ -86,7 +82,7 @@ namespace Dreamteck.Splines.Editor
             {
                 if(drawComputers[i] == comp)
                 {
-                    drawComputers[i].alwaysDraw = false;
+                    drawComputers[i].editorAlwaysDraw = false;
                     drawComputers.RemoveAt(i);
                     return;
                 }
@@ -110,7 +106,7 @@ namespace Dreamteck.Splines.Editor
                 Handles.color = handleColor;
             }
 
-            if (!comp.drawThinckness)
+            if (!comp.editorDrawThickness)
             {
                 if (positions.Length != comp.sampleCount * 2) positions = new Vector3[comp.sampleCount * 2];
                 Vector3 prevPoint = comp.EvaluatePosition(fromPercent);
@@ -131,14 +127,14 @@ namespace Dreamteck.Splines.Editor
                 if (positions.Length != comp.sampleCount * 6) positions = new Vector3[comp.sampleCount * 6];
                 SplineSample prevResult = comp.Evaluate(fromPercent);
                 Vector3 prevNormal = prevResult.up;
-                if (comp.billboardThickness) prevNormal = (editorCamera.position - prevResult.position).normalized;
+                if (comp.editorBillboardThickness) prevNormal = (editorCamera.position - prevResult.position).normalized;
                 Vector3 prevRight = Vector3.Cross(prevResult.forward, prevNormal).normalized * prevResult.size * 0.5f;
                 int pointIndex = 0;
                 for (int i = 1; i < comp.sampleCount; i++)
                 {
                     SplineSample newResult = comp.samples[i];
                     Vector3 newNormal = newResult.up;
-                    if (comp.billboardThickness) newNormal = (editorCamera.position - newResult.position).normalized;
+                    if (comp.editorBillboardThickness) newNormal = (editorCamera.position - newResult.position).normalized;
                     Vector3 newRight = Vector3.Cross(newResult.forward, newNormal).normalized * newResult.size * 0.5f;
 
                     positions[pointIndex] = prevResult.position + prevRight;

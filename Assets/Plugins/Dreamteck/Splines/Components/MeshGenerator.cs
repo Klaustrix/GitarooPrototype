@@ -9,6 +9,8 @@ namespace Dreamteck.Splines
 {
     public class MeshGenerator : SplineUser
     {
+        protected const int UNITY_16_VERTEX_LIMIT = 65535;
+
         public float size
         {
             get { return _size; }
@@ -56,6 +58,32 @@ namespace Dreamteck.Splines
                 if (value != _normalMethod)
                 {
                     _normalMethod = value;
+                    Rebuild();
+                }
+            }
+        }
+
+        public bool useSplineSize
+        {
+            get { return _useSplineSize; }
+            set
+            {
+                if (value != _useSplineSize)
+                {
+                    _useSplineSize = value;
+                    Rebuild();
+                }
+            }
+        }
+
+        public bool useSplineColor
+        {
+            get { return _useSplineColor; }
+            set
+            {
+                if (value != _useSplineColor)
+                {
+                    _useSplineColor = value;
                     Rebuild();
                 }
             }
@@ -165,6 +193,20 @@ namespace Dreamteck.Splines
             }
         }
 
+        public UnityEngine.Rendering.IndexFormat meshIndexFormat
+        {
+            get { return _meshIndexFormat; }
+            set
+            {
+                if (value != _meshIndexFormat)
+                {
+                    _meshIndexFormat = value;
+                    RefreshMesh();
+                    Rebuild();
+                }
+            }
+        }
+
         public bool baked
         {
             get
@@ -181,12 +223,8 @@ namespace Dreamteck.Splines
                 if (value != _markDynamic)
                 {
                     _markDynamic = value;
-                    if (!_markDynamic)
-                    {
-                        Destroy(mesh);
-                        mesh = new Mesh();
-                    }
-                    RebuildImmediate();
+                    RefreshMesh();
+                    Rebuild();
                 }
             }
         }
@@ -217,6 +255,12 @@ public enum UVMode { Clip, UniformClip, Clamp, UniformClamp }
         private bool _calculateTangents = true;
         [SerializeField]
         [HideInInspector]
+        private bool _useSplineSize = true;
+        [SerializeField]
+        [HideInInspector]
+        private bool _useSplineColor = true;
+        [SerializeField]
+        [HideInInspector]
         [Range(-360f, 360f)]
         private float _rotation = 0f;
         [SerializeField]
@@ -237,6 +281,9 @@ public enum UVMode { Clip, UniformClip, Clamp, UniformClamp }
         [SerializeField]
         [HideInInspector]
         private float _uvRotation = 0f;
+        [SerializeField]
+        [HideInInspector]
+        private UnityEngine.Rendering.IndexFormat _meshIndexFormat = UnityEngine.Rendering.IndexFormat.UInt16;
         [SerializeField]
         [HideInInspector]
         protected MeshCollider meshCollider;
@@ -264,7 +311,9 @@ public enum UVMode { Clip, UniformClip, Clamp, UniformClamp }
         public override void EditorAwake()
         {
             base.EditorAwake();
-            CloneMesh();
+            mesh = null;
+            tsMesh = TS_Mesh.Copy(tsMesh);
+            RefreshMesh();
             Awake();
         }
 
@@ -294,7 +343,10 @@ public enum UVMode { Clip, UniformClip, Clamp, UniformClamp }
 
         protected override void Awake()
         {
-            if (mesh == null) mesh = new Mesh();
+            if (mesh == null)
+            {
+                CreateMesh();
+            }
             base.Awake();
             filter = GetComponent<MeshFilter>();
             meshRenderer = GetComponent<MeshRenderer>();
@@ -317,26 +369,6 @@ public enum UVMode { Clip, UniformClip, Clamp, UniformClamp }
             }
             if (!materialFound) rend.sharedMaterial = AssetDatabase.GetBuiltinExtraResource<Material>("Default-Diffuse.mat");
 #endif
-        }
-
-        public void CloneMesh()
-        {
-            if (tsMesh != null)
-            {
-                tsMesh = TS_Mesh.Copy(tsMesh);
-            }
-            else
-            {
-                tsMesh = new TS_Mesh();
-            }
-            if (mesh != null)
-            {
-                mesh = (Mesh)Instantiate(mesh);
-            }
-            else
-            {
-                mesh = new Mesh();
-            }
         }
 
         public override void Rebuild()
@@ -399,7 +431,7 @@ public enum UVMode { Clip, UniformClip, Clamp, UniformClamp }
         protected override void Build()
         {
             base.Build();
-            if (sampleCount > 0) BuildMesh();
+            BuildMesh();
         }
 
         protected override void PostBuild()
@@ -424,17 +456,23 @@ public enum UVMode { Clip, UniformClip, Clamp, UniformClamp }
             {
                 MeshUtility.FlipFaces(tsMesh);
             }
+
             if (_calculateTangents)
             {
                 MeshUtility.CalculateTangents(tsMesh);
             }
-#if !UNITY_2019_2_OR_NEWER
-            if (tsMesh.vertexCount > 64000)
+
+            if (_meshIndexFormat == UnityEngine.Rendering.IndexFormat.UInt16 && tsMesh.vertexCount > UNITY_16_VERTEX_LIMIT)
             {
-                Debug.LogError("WARNING: The generated mesh for " + name + " has " + tsMesh.vertexCount + " vertices. The maximum vertex count for meshes in Unity is 64000. The mesh will not be updated.");
+                Debug.LogError("WARNING: The generated mesh for " + name + " exceeds the maximum vertex count for standard meshes in Unity (" + UNITY_16_VERTEX_LIMIT + "). To create bigger meshes, set the Index Format inside the Vertices foldout to 32.");
             }
-#endif
-            mesh.MarkDynamic();
+
+            tsMesh.indexFormat = _meshIndexFormat;
+            if (_markDynamic)
+            {
+                mesh.MarkDynamic();
+            }
+
             tsMesh.WriteMesh(ref mesh);
             if (_normalMethod == 0)
             {
@@ -449,6 +487,14 @@ public enum UVMode { Clip, UniformClip, Clamp, UniformClamp }
 
         protected virtual void AllocateMesh(int vertexCount, int trisCount)
         {
+            if(trisCount < 0)
+            {
+                trisCount = 0;
+            }
+            if(vertexCount < 0)
+            {
+                vertexCount = 0;
+            }
             if (_doubleSided)
             {
                 vertexCount *= 2;
@@ -462,7 +508,10 @@ public enum UVMode { Clip, UniformClip, Clamp, UniformClamp }
                 tsMesh.colors = new Color[vertexCount];
                 tsMesh.uv = new Vector2[vertexCount];
             }
-            if (tsMesh.triangles.Length != trisCount) tsMesh.triangles = new int[trisCount];
+            if (tsMesh.triangles.Length != trisCount)
+            {
+                tsMesh.triangles = new int[trisCount];
+            }
         }
 
         protected void ResetUVDistance()
@@ -487,6 +536,40 @@ public enum UVMode { Clip, UniformClip, Clamp, UniformClamp }
                 case UVMode.UniformClamp: uvs.y = vDist * _uvScale.y / (float)span - _uvOffset.y; break;
                 default: uvs.y = vDist * _uvScale.y - _uvOffset.y; break;
             }
+        }
+
+        protected float GetBaseSize(SplineSample sample)
+        {
+            return _useSplineSize? sample.size: 1f;
+        }
+
+        protected Color GetBaseColor(SplineSample sample)
+        {
+            return _useSplineColor ? sample.color : Color.white;
+        }
+
+        protected virtual void CreateMesh()
+        {
+            mesh = new Mesh();
+            mesh.indexFormat = _meshIndexFormat;
+            tsMesh.indexFormat = _meshIndexFormat;
+            if (_markDynamic)
+            {
+                mesh.MarkDynamic();
+            }
+        }
+
+        private void RefreshMesh()
+        {
+            if (!Application.isPlaying)
+            {
+                DestroyImmediate(mesh);
+            } 
+            else
+            {
+                Destroy(mesh);
+            }
+            CreateMesh();
         }
     }
 

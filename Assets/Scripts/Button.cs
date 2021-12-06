@@ -7,6 +7,9 @@ public class Button : MonoBehaviour
     private Vector3 _big;
     private Color _colorSolid;
     private Color _colorTransparent;
+    private bool _primaryInputState = false;
+    private bool _lock = false;
+    private bool _test = false;
 
     // Start is called before the first frame update
     void Start()
@@ -17,18 +20,29 @@ public class Button : MonoBehaviour
         _colorTransparent.a = 50;
     }
 
-    // Update is called once per frame
+    //This code makes the button bigger while you hold the primary input down
     void Update()
     {
+        //Check the SceneInput object for the state of the primary input button
+        _primaryInputState = GameObject.Find("SceneInput").GetComponent<ProcessInput>().attackPressed;
+
+        if (_test != _primaryInputState)
+        {
+            _lock = false;
+            _test = _primaryInputState;
+        }
+
         //If A is pressed, increase size
-        if (Input.GetButtonDown("XboxA") == true)
+        if (_primaryInputState == true && _lock == false)
         {
             transform.localScale += _big;
+            _lock = true;
         }
         //If A is released, decrease size
-        if (Input.GetButtonUp("XboxA") == true)
+        if (_primaryInputState == false && _lock == false)
         {
             transform.localScale -= _big;
+            _lock = true;
         }
 
         //THIS SHOUOLD BE CORRECTED TO WHEN THERE IS/ISN'T AN ACTIVE TRACE LINE

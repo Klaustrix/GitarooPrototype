@@ -78,7 +78,7 @@ namespace Dreamteck.Splines
             }
         }
 
-        private void AddEvent(LengthEvent lengthEvent)
+        public void AddEvent(LengthEvent lengthEvent)
         {
             LengthEvent[] newEvents = new LengthEvent[lengthEvents.Length + 1];
             lengthEvents.CopyTo(newEvents, 0);

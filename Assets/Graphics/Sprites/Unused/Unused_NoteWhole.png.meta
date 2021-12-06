@@ -71,6 +71,8 @@ TextureImporter:
   isReadable: 0
   streamingMipmaps: 0
   streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMasterTextureLimit: 0
   grayScaleToAlpha: 0
   generateCubemap: 6
   cubemapConvolution: 0
@@ -79,9 +81,9 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: -1
-    aniso: -1
-    mipBias: -100
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
     wrapU: 0
     wrapV: 0
     wrapW: 0
@@ -102,9 +104,12 @@ TextureImporter:
   textureType: 8
   textureShape: 1
   singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
   maxTextureSizeSet: 0
   compressionQualitySet: 0
   textureFormatSet: 0
+  ignorePngGamma: 0
   applyGammaDecoding: 0
   platformSettings:
   - serializedVersion: 3
@@ -150,7 +155,7 @@ TextureImporter:
       tessellationDetail: 0
       bones: []
       spriteID: af9d75c1bf2b16230800000000000000
-      internalID: 3630379566219385338
+      internalID: 915584076240637443
       vertices: []
       indices: 
       edges: []
@@ -171,7 +176,7 @@ TextureImporter:
       tessellationDetail: 0
       bones: []
       spriteID: f4593766182a0e3c0800000000000000
-      internalID: -4332284164877085361
+      internalID: -2886036088094935716
       vertices: []
       indices: 
       edges: []
@@ -318,7 +323,7 @@ TextureImporter:
       tessellationDetail: 0
       bones: []
       spriteID: bc4ba25d62005f1d0800000000000000
-      internalID: -3317745383703399221
+      internalID: 8087162472910521464
       vertices: []
       indices: 
       edges: []
@@ -333,6 +338,16 @@ TextureImporter:
     edges: []
     weights: []
     secondaryTextures: []
+    nameFileIdTable:
+      UI_NoteWhole_3: -2886036088094935716
+      UI_NoteWhole_6: 8087162472910521464
+      UI_NoteWhole_8: -4843090172903659803
+      UI_NoteWhole_2: 7528643231817375181
+      UI_NoteWhole_7: 6827613007472697394
+      UI_NoteWhole_5: 1266084033423639783
+      UI_NoteWhole_0: 915584076240637443
+      UI_NoteWhole_4: 7215873711967283755
+      UI_NoteWhole_1: -4736125263997678277
   spritePackingTag: 
   pSDRemoveMatte: 0
   pSDShowRemoveMatteOption: 0

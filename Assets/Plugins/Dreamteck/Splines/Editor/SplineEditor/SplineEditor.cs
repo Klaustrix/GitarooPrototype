@@ -9,6 +9,7 @@ namespace Dreamteck.Splines.Editor
 
     public class SplineEditor : SplineEditorBase
     {
+        public enum Space { World, Local };
         public bool editMode = false;
         protected Matrix4x4 _matrix;
         protected string editorName = "SplineEditor";
@@ -17,15 +18,16 @@ namespace Dreamteck.Splines.Editor
         public int sampleRate;
         public Color color = Color.white;
         public bool is2D = false;
+        public Space space = Space.World;
 
-        int module = -1, selectModule = -1, loadedModuleIndex = -1;
+        private int module = -1, selectModule = -1, loadedModuleIndex = -1;
         public MainPointModule mainModule;
-        PointModule[] modules = new PointModule[0];
+        private PointModule[] modules = new PointModule[0];
 
         protected List<PointOperation> pointOperations = new List<PointOperation>();
         private string[] pointOperationStrings = new string[0];
 
-        public  SplinePoint[] points = new SplinePoint[0];
+        public SplinePoint[] points = new SplinePoint[0];
         public List<int> selectedPoints = new List<int>();
         protected Vector2 lastClickPoint = Vector2.zero;
 
@@ -41,6 +43,8 @@ namespace Dreamteck.Splines.Editor
 
         float lastEmptyClickTime = 0f;
 
+        private int _selectedPointOperation = 0;
+
         protected GUIContent[] toolContents = new GUIContent[0], toolContentsSelected = new GUIContent[0];
 
         protected bool pointToolsToggle = false;
@@ -55,13 +59,17 @@ namespace Dreamteck.Splines.Editor
         public delegate float SplineCalculateLength(double from, double to);
         public delegate double SplineTravel(double start, float distance, Spline.Direction direction);
 
-
         public SplineEvaluation evaluate;
         public SplinePointEvaluation evaluateAtPoint;
         public SplineEvaluatePosition evaluatePosition;
         public SplineCalculateLength calculateLength;
         public SplineTravel travel;
         public EmptyHandler selectionChangeHandler;
+
+        public int moduleCount
+        {
+            get { return modules.Length; }
+        }
 
         public PointModule currentModule
         {
@@ -99,13 +107,25 @@ namespace Dreamteck.Splines.Editor
             pointOperations.Add(new PointOperation { name = "Mirror Z", action = delegate { MirrorSelection(2); } });
             pointOperations.Add(new PointOperation { name = "Distribute Evenly", action = delegate { DistributeEvenly(); } });
             pointOperations.Add(new PointOperation { name = "Auto Bezier Tangents", action = delegate { AutoTangents(); } });
+            pointOperations.Add(new PointOperation { name = "Swap Bezier Tangents", action = delegate { SwapTangents(); } });
+            pointOperations.Add(new PointOperation { name = "Flip Bezier Tangents", action = delegate { FlipTangents(); } });
+            pointOperations.Add(new PointOperation { name = "Flip First Bezier Tangent", action = delegate { FlipFirstTangent(); } });
+            pointOperations.Add(new PointOperation { name = "Flip Seconds Bezier Tangent", action = delegate { FlipSecondTangent(); } });
 
-            pointOperationStrings = new string[pointOperations.Count + 1];
-            pointOperationStrings[0] = "Point Operations";
+            pointOperationStrings = new string[pointOperations.Count];
             for (int i = 0; i < pointOperations.Count; i++)
             {
-                pointOperationStrings[i + 1] = pointOperations[i].name;
+                pointOperationStrings[i] = pointOperations[i].name;
             }
+            if(_selectedPointOperation >= pointOperationStrings.Length || _selectedPointOperation < 0)
+            {
+                _selectedPointOperation = 0;
+            }
+        }
+
+        public PointModule GetModule(int index)
+        {
+            return modules[index];
         }
 
         public override void UndoRedoPerformed()
@@ -153,6 +173,7 @@ namespace Dreamteck.Splines.Editor
             base.Save();
             EditorPrefs.SetBool(GetSaveName("editMode"), editMode);
             EditorPrefs.SetBool(GetSaveName("pointToolsToggle"), pointToolsToggle);
+            EditorPrefs.SetInt(GetSaveName("selectedPointOperation"), _selectedPointOperation);
         }
 
         protected override void Load()
@@ -160,6 +181,7 @@ namespace Dreamteck.Splines.Editor
             base.Load();
             editMode = EditorPrefs.GetBool(GetSaveName("editMode"), false);
             pointToolsToggle = EditorPrefs.GetBool(GetSaveName("pointToolsToggle"), false);
+            _selectedPointOperation = EditorPrefs.GetInt(GetSaveName("selectedPointOperation"), 0);
         }
 
         private void HandleEditModeToggle()
@@ -191,6 +213,10 @@ namespace Dreamteck.Splines.Editor
             base.DrawInspector();
             if (editMode)
             {
+                if (!gizmosEnabled)
+                {
+                    EditorGUILayout.HelpBox("Gizmos are disabled in the scene view. Enable Gizmos in the scene view for the spline editor to work.", MessageType.Error);
+                }
                 EditorGUILayout.Space();
                 DrawToolMenu();
                 EditorGUILayout.Space();
@@ -227,7 +253,7 @@ namespace Dreamteck.Splines.Editor
             EditorGUILayout.EndHorizontal();
         }
 
-        void PointPanel()
+        protected virtual void PointPanel()
         {
             if (points.Length == 0)
             {
@@ -235,34 +261,29 @@ namespace Dreamteck.Splines.Editor
                 return;
             }
             mainModule.DrawInspector();
-            PointMenu();
-            if(selectedPoints.Count > 0)
+            if (selectedPoints.Count > 0 && points.Length > 0)
             {
-                EditorGUILayout.BeginHorizontal();
-                int pointOperation = EditorGUILayout.Popup(0, pointOperationStrings);
-                if (pointOperation > 0)
-                {
-                    pointOperations[pointOperation - 1].action.Invoke();
-                    pointOperation = 0;
-                }
-                    EditorGUILayout.EndHorizontal();
+                PointMenu();
             }
         }
 
         public virtual void BeforeSceneGUI(SceneView current)
         {
             mainModule.BeforeSceneDraw(current);
-            if (module >= 0 && module < modules.Length) modules[module].BeforeSceneDraw(current);
+            if (module >= 0 && module < modules.Length)
+            {
+                modules[module].BeforeSceneDraw(current);
+            }
         }
 
-        public override void DrawScene()
+        public override void DrawScene(SceneView current)
         {
             HandleEditModeToggle();
             if (!editMode)
             {
                 return;
             }
-            base.DrawScene();
+            base.DrawScene(current);
             Event e = Event.current;
             if (Tools.current != Tool.None)
             {
@@ -303,7 +324,7 @@ namespace Dreamteck.Splines.Editor
                 if (mainModule.isDragging) mainModule.FinishDrag();
                 else
                 {
-                    if (emptyClick)
+                    if (emptyClick && !eventModule.alt)
                     {
                         if(selectedPoints.Count > 0) mainModule.ClearSelection();
                         else if(editMode)
@@ -373,9 +394,8 @@ namespace Dreamteck.Splines.Editor
         }
 
 
-        void PointMenu()
+        protected virtual void PointMenu()
         {
-            if (selectedPoints.Count == 0 || points.Length == 0) return;
             //Otherwise show the editing menu + the point selection menu
             Vector3 avgPos = Vector3.zero;
             Vector3 avgTan = Vector3.zero;
@@ -410,10 +430,28 @@ namespace Dreamteck.Splines.Editor
             SplinePoint.Type lastType = avgPoint.type;
 
             avgPoint.normal = avgNormal;
+
+            EditorGUILayout.Space();
+
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Point Operations");
+            EditorGUILayout.BeginVertical();
+
+            _selectedPointOperation = EditorGUILayout.Popup(_selectedPointOperation, pointOperationStrings);
+            string modifyText = "Apply";
+            if (selectedPoints.Count > 1) modifyText += "s";
+            if (GUILayout.Button(modifyText))
+            {
+                pointOperations[_selectedPointOperation].action.Invoke();
+            }
+            EditorGUILayout.EndVertical();
+
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.Space();
+
             EditorGUI.BeginChangeCheck();
-            SplineComputer.Space lastSpace = SplinePrefs.pointEditSpace;
-            SplinePrefs.pointEditSpace = (SplineComputer.Space)EditorGUILayout.EnumPopup("Edit Space", SplinePrefs.pointEditSpace);
-            if (lastSpace != SplinePrefs.pointEditSpace) SplinePrefs.SavePrefs();
+            space = (Space)EditorGUILayout.EnumPopup("Coordinate Space", space);
             if (splineType == Spline.Type.Bezier)
             {
                 if (is2D)
@@ -431,13 +469,16 @@ namespace Dreamteck.Splines.Editor
             else avgPoint.SetPosition(TransformedPositionField("Position", avgPoint.position));
             if (!is2D)
             {
-                if (SplinePrefs.pointEditSpace == SplineComputer.Space.Local) avgPoint.normal = _matrix.inverse.MultiplyVector(avgPoint.normal);
+                if (space == Space.Local) avgPoint.normal = _matrix.inverse.MultiplyVector(avgPoint.normal);
                 avgPoint.normal = TransformedPositionField("Normal", avgPoint.normal);
-                if (SplinePrefs.pointEditSpace == SplineComputer.Space.Local) avgPoint.normal = _matrix.MultiplyVector(avgPoint.normal);
+                if (space == Space.Local) avgPoint.normal = _matrix.MultiplyVector(avgPoint.normal);
             }
             avgPoint.size = EditorGUILayout.FloatField("Size", avgPoint.size);
             avgPoint.color = EditorGUILayout.ColorField("Color", avgPoint.color);
-            if (splineType == Spline.Type.Bezier) avgPoint.type = (SplinePoint.Type)EditorGUILayout.EnumPopup("Point Type", avgPoint.type);
+            if (splineType == Spline.Type.Bezier)
+            {
+                avgPoint.type = (SplinePoint.Type)EditorGUILayout.EnumPopup("Point Type", avgPoint.type);
+            }
 
             if (!EditorGUI.EndChangeCheck()) return;
             RecordUndo("Edit Points");
@@ -468,18 +509,18 @@ namespace Dreamteck.Splines.Editor
         Vector3 TransformedPositionField(string title, Vector3 worldPoint)
         {
             Vector3 pos = worldPoint;
-            if (SplinePrefs.pointEditSpace == SplineComputer.Space.Local) pos = _matrix.inverse.MultiplyPoint3x4(worldPoint);
+            if (space == Space.Local) pos = _matrix.inverse.MultiplyPoint3x4(worldPoint);
             pos = EditorGUILayout.Vector3Field(title, pos);
-            if (SplinePrefs.pointEditSpace == SplineComputer.Space.Local) pos = _matrix.MultiplyPoint3x4(pos);
+            if (space == Space.Local) pos = _matrix.MultiplyPoint3x4(pos);
             return pos;
         }
 
         Vector2 TransformedPositionField2D(string title, Vector3 worldPoint)
         {
             Vector2 pos = worldPoint;
-            if (SplinePrefs.pointEditSpace == SplineComputer.Space.Local) pos = _matrix.inverse.MultiplyPoint3x4(worldPoint);
+            if (space == Space.Local) pos = _matrix.inverse.MultiplyPoint3x4(worldPoint);
             pos = EditorGUILayout.Vector2Field(title, pos);
-            if (SplinePrefs.pointEditSpace == SplineComputer.Space.Local) pos = _matrix.MultiplyPoint3x4(pos);
+            if (space == Space.Local) pos = _matrix.MultiplyPoint3x4(pos);
             return pos;
         }
 
@@ -745,6 +786,53 @@ namespace Dreamteck.Splines.Editor
                 Vector3 delta = (forwardPos - prevPos) / 2f;
                 points[index].tangent = points[index].position - delta / 3f;
                 points[index].tangent2 = points[index].position + delta / 3f;
+            }
+            ResetCurrentModule();
+        }
+
+        public void SwapTangents()
+        {
+            RecordUndo("Swap Tangents");
+            for (int i = 0; i < selectedPoints.Count; i++)
+            {
+                int index = selectedPoints[i];
+                Vector3 tempTangent = points[index].tangent;
+                points[index].tangent = points[index].tangent2;
+                points[index].tangent2 = tempTangent;
+            }
+            ResetCurrentModule();
+        }
+
+        public void FlipTangents()
+        {
+            RecordUndo("Flip Tangents");
+            for (int i = 0; i < selectedPoints.Count; i++)
+            {
+                int index = selectedPoints[i];
+                points[index].tangent = points[index].position + (points[index].position - points[index].tangent);
+                points[index].tangent2 = points[index].position + (points[index].position - points[index].tangent2);
+            }
+            ResetCurrentModule();
+        }
+
+        public void FlipFirstTangent()
+        {
+            RecordUndo("Flip First Tangent");
+            for (int i = 0; i < selectedPoints.Count; i++)
+            {
+                int index = selectedPoints[i];
+                points[index].tangent2 = points[index].position + (points[index].position - points[index].tangent2);
+            }
+            ResetCurrentModule();
+        }
+
+        public void FlipSecondTangent()
+        {
+            RecordUndo("Flip Second Tangent");
+            for (int i = 0; i < selectedPoints.Count; i++)
+            {
+                int index = selectedPoints[i];
+                points[index].tangent = points[index].position + (points[index].position - points[index].tangent);
             }
             ResetCurrentModule();
         }

@@ -11,6 +11,10 @@ namespace Dreamteck.Splines.IO
         {
             get { return fileName; }
         }
+
+        private System.Globalization.CultureInfo culture = new System.Globalization.CultureInfo("en-US");
+        private System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Any;
+
         internal class Transformation
         {
             protected static Matrix4x4 matrix = new Matrix4x4();
@@ -294,15 +298,16 @@ namespace Dreamteck.Splines.IO
             List<float> list = new List<float>();
             foreach (char c in content)
             {
-                if (c == ',' || c == '-' || char.IsWhiteSpace(c))
+                if (c == ',' || c == '-' || char.IsWhiteSpace(c) || (accumulated.Contains(".") && c == '.'))
                 {
                     if (!IsWHiteSpace(accumulated))
                     {
                         float parsed = 0f;
-                        float.TryParse(accumulated, out parsed);
+                        float.TryParse(accumulated, style, culture, out parsed);
                         list.Add(parsed);
                         accumulated = "";
                         if (c == '-') accumulated = "-";
+                        if (c == '.') accumulated = "0.";
                         continue;
                     }
                 }
@@ -311,7 +316,7 @@ namespace Dreamteck.Splines.IO
             if (!IsWHiteSpace(accumulated))
             {
                 float p = 0f;
-                float.TryParse(accumulated, out p);
+                float.TryParse(accumulated, style, culture, out p);
                 list.Add(p);
             }
             return list;

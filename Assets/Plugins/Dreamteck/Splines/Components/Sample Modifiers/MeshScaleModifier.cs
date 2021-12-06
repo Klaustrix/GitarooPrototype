@@ -10,7 +10,7 @@
         [System.Serializable]
         public class ScaleKey : Key
         {
-            public Vector2 scale = Vector2.one;
+            public Vector3 scale = Vector3.one;
 
             public ScaleKey(double f, double t, MeshScaleModifier modifier) : base(f, t, modifier)
             {
@@ -60,15 +60,16 @@
             }
         }
 
-        public Vector2 GetScale(SplineSample sample)
+        public Vector3 GetScale(SplineSample sample)
         {
-            Vector2 scale = Vector2.one;
+            Vector3 scale = Vector3.one;
             for (int i = 0; i < keys.Count; i++)
             {
                 float lerp = keys[i].Evaluate(sample.percent);
-                Vector2 scaleMultiplier = Vector2.Lerp(Vector2.one, keys[i].scale, lerp);
+                Vector3 scaleMultiplier = Vector3.Lerp(Vector3.one, keys[i].scale, lerp);
                 scale.x *= scaleMultiplier.x;
                 scale.y *= scaleMultiplier.y;
+                scale.z *= scaleMultiplier.z;
             }
             return scale;
         }

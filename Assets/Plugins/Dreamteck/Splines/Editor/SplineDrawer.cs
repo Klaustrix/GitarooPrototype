@@ -18,6 +18,7 @@ namespace Dreamteck.Splines.Editor
             Color prevColor = Handles.color;
             Handles.color = color;
             int iterations = spline.iterations;
+            if (iterations <= 0) return;
             if (drawThickness)
             {
                 Transform editorCamera = SceneView.currentDrawingSceneView.camera.transform;

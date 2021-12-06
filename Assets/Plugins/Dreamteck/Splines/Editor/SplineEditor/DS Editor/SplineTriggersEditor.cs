@@ -48,9 +48,9 @@ namespace Dreamteck.Splines.Editor
             if (EditorGUI.EndChangeCheck()) SceneView.RepaintAll();
         }
 
-        public override void DrawScene()
+        public override void DrawScene(SceneView current)
         {
-            base.DrawScene();
+            base.DrawScene(current);
             for (int i = 0; i < spline.triggerGroups.Length; i++)
             {
                 if (!spline.triggerGroups[i].open) continue;
@@ -63,15 +63,15 @@ namespace Dreamteck.Splines.Editor
             TriggerGroup group = spline.triggerGroups[index];
             for (int i = 0; i < group.triggers.Length; i++)
             {
-                SplineEditorHandles.SplineSliderGizmo gizmo = SplineEditorHandles.SplineSliderGizmo.DualArrow;
+                SplineComputerEditorHandles.SplineSliderGizmo gizmo = SplineComputerEditorHandles.SplineSliderGizmo.DualArrow;
                 switch (group.triggers[i].type)
                 {
-                    case SplineTrigger.Type.Backward: gizmo = SplineEditorHandles.SplineSliderGizmo.BackwardTriangle; break;
-                    case SplineTrigger.Type.Forward: gizmo = SplineEditorHandles.SplineSliderGizmo.ForwardTriangle; break;
-                    case SplineTrigger.Type.Double: gizmo = SplineEditorHandles.SplineSliderGizmo.DualArrow; break;
+                    case SplineTrigger.Type.Backward: gizmo = SplineComputerEditorHandles.SplineSliderGizmo.BackwardTriangle; break;
+                    case SplineTrigger.Type.Forward: gizmo = SplineComputerEditorHandles.SplineSliderGizmo.ForwardTriangle; break;
+                    case SplineTrigger.Type.Double: gizmo = SplineComputerEditorHandles.SplineSliderGizmo.DualArrow; break;
                 }
                 double last = group.triggers[i].position;
-                if (SplineEditorHandles.Slider(spline, ref group.triggers[i].position, group.triggers[i].color, group.triggers[i].name, gizmo) || last != group.triggers[i].position)
+                if (SplineComputerEditorHandles.Slider(spline, ref group.triggers[i].position, group.triggers[i].color, group.triggers[i].name, gizmo) || last != group.triggers[i].position)
                 {
                     Select(index, i);
                     Repaint();

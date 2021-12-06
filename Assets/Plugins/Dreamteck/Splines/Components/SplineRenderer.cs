@@ -29,18 +29,14 @@ namespace Dreamteck.Splines
         public bool autoOrient = true;
         [HideInInspector]
         public int updateFrameInterval = 0;
-
-        private int currentFrame = 0;
-
-
         [SerializeField]
         [HideInInspector]
         private int _slices = 1;
-        [SerializeField]
-        [HideInInspector]
-        private Vector3 vertexDirection = Vector3.up;
-        private bool orthographic = false;
-        private bool init = false;
+
+        private int _currentFrame = 0;
+        private Vector3 _vertexDirection = Vector3.up;
+        private bool _orthographic = false;
+        private bool _init = false;
 
         protected override void Awake()
         {
@@ -50,34 +46,42 @@ namespace Dreamteck.Splines
 
         void Start()
         {
-            if (Camera.current != null) orthographic = Camera.current.orthographic;
+            if (Camera.current != null)
+            {
+                _orthographic = Camera.current.orthographic;
+            } 
+            else if (Camera.main != null)
+            {
+                _orthographic = Camera.main.orthographic;
+            }
         }
 
         protected override void LateRun()
         {
             if (updateFrameInterval > 0)
             {
-                currentFrame++;
-                if (currentFrame > updateFrameInterval) currentFrame = 0;
+                _currentFrame++;
+                if (_currentFrame > updateFrameInterval) _currentFrame = 0;
             }
         }
 
         protected override void BuildMesh()
         {
             base.BuildMesh();
-            GenerateVertices(vertexDirection, orthographic);
+            GenerateVertices(_vertexDirection, _orthographic);
             MeshUtility.GeneratePlaneTriangles(ref tsMesh.triangles, _slices, sampleCount, false, 0, 0);
         }
 
         public void RenderWithCamera(Camera cam)
         {
-            if (sampleCount == 0) return;
-            orthographic = true;
-            if (cam != null)
+            _orthographic = cam.orthographic;
+            if (_orthographic)
             {
-                if (cam.orthographic) vertexDirection = -cam.transform.forward;
-                else vertexDirection = cam.transform.position;
-                orthographic = cam.orthographic;
+                _vertexDirection = -cam.transform.forward;
+            }
+            else
+            {
+                _vertexDirection = cam.transform.position;
             }
             BuildMesh();
             WriteMesh();
@@ -88,17 +92,26 @@ namespace Dreamteck.Splines
             if (!autoOrient) return;
             if (updateFrameInterval > 0)
             {
-                if (currentFrame != 0) return;
+                if (_currentFrame != 0) return;
             }
+
             if (!Application.isPlaying)
             {
-                if (!init)
+                if (!_init)
                 {
                     Awake();
-                    init = true;
+                    _init = true;
                 }
             }
-            RenderWithCamera(Camera.current);
+
+            if (Camera.current != null)
+            {
+                RenderWithCamera(Camera.current);
+            } 
+            else if(Camera.main)
+            {
+                RenderWithCamera(Camera.main);
+            }
         }
 
         public void GenerateVertices(Vector3 vertexDirection, bool orthoGraphic)
@@ -123,7 +136,7 @@ namespace Dreamteck.Splines
                     float slicePercent = ((float)n / _slices);
                     tsMesh.vertices[vertexIndex] = center - vertexRight * evalResult.size * 0.5f * size + vertexRight * evalResult.size * slicePercent * size;
                     CalculateUVs(evalResult.percent, slicePercent);
-                    tsMesh.uv[vertexIndex] = Vector2.one * 0.5f + (Vector2)(Quaternion.AngleAxis(uvRotation, Vector3.forward) * (Vector2.one * 0.5f - uvs));
+                    tsMesh.uv[vertexIndex] = Vector2.one * 0.5f + (Vector2)(Quaternion.AngleAxis(uvRotation + 180f, Vector3.forward) * (Vector2.one * 0.5f - uvs));
                     tsMesh.normals[vertexIndex] = vertexNormal;
                     tsMesh.colors[vertexIndex] = vertexColor;
                     vertexIndex++;

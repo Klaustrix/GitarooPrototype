@@ -71,6 +71,25 @@ namespace Dreamteck.Splines.Editor
             }
         }
 
+        private Vector3 SurfaceMoveHandle(Vector3 inputPosition, float size = 0.2f)
+        {
+            Vector3 lastPosition = inputPosition;
+            inputPosition = Handles.FreeMoveHandle(inputPosition, 
+                Quaternion.LookRotation(SceneView.currentDrawingSceneView.camera.transform.position - inputPosition), 
+                HandleUtility.GetHandleSize(inputPosition) * size, Vector3.zero, Handles.CircleHandleCap);
+            if (lastPosition != inputPosition)
+            {
+                Ray ray = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
+                RaycastHit hit;
+                if (Physics.Raycast(ray, out hit, Mathf.Infinity, surfaceLayerMask))
+                {
+                    inputPosition = hit.point + hit.normal * surfaceOffset;
+                    Handles.DrawLine(hit.point, hit.point + hit.normal * HandleUtility.GetHandleSize(hit.point) * 0.5f);
+                }
+            }
+            return inputPosition;
+        }
+
         public override void DrawScene()
         {
             if (selectedPoints.Count == 0) return;
@@ -78,18 +97,12 @@ namespace Dreamteck.Splines.Editor
             Vector3 lastPos = c;
             if (surfaceMode)
             {
-                c = Handles.FreeMoveHandle(c, Quaternion.LookRotation(SceneView.currentDrawingSceneView.camera.transform.position - c), HandleUtility.GetHandleSize(c) * 0.2f, Vector3.zero, Handles.CircleHandleCap);
-                if(lastPos != c)
-                {
-                    Ray ray = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
-                    RaycastHit hit;
-                    if (Physics.Raycast(ray, out hit, Mathf.Infinity, surfaceLayerMask))
-                    {
-                        c = hit.point + hit.normal * surfaceOffset;
-                        Handles.DrawLine(hit.point, hit.point + hit.normal * HandleUtility.GetHandleSize(hit.point) * 0.5f);
-                    }
-                }
-            } else c = Handles.PositionHandle(c, rotation);
+                c = SurfaceMoveHandle(c, 0.2f);
+            }
+            else
+            {
+                c = Handles.PositionHandle(c, rotation);
+            }
             if (lastPos != c)
             {
                 RecordUndo("Move Points");
@@ -105,13 +118,28 @@ namespace Dreamteck.Splines.Editor
             {
                 int index = selectedPoints[0];
                 lastPos = points[index].tangent;
-                Vector3 newPos = Handles.PositionHandle(points[index].tangent, rotation);
+                Vector3 newPos = Vector3.zero;
+                if (surfaceMode)
+                {
+                    newPos = SurfaceMoveHandle(points[index].tangent, 0.15f);
+                } else
+                {
+                    newPos = Handles.PositionHandle(points[index].tangent, rotation);
+                }
+
                 if (snap) newPos = SnapPoint(newPos);
                 if (newPos != lastPos) RecordUndo("Move Tangents");
                 points[index].SetTangentPosition(newPos);
 
                 lastPos = points[index].tangent2;
-                newPos = Handles.PositionHandle(points[index].tangent2, rotation);
+                if (surfaceMode)
+                {
+                    newPos = SurfaceMoveHandle(points[index].tangent2, 0.15f);
+                } else
+                {
+                    newPos = Handles.PositionHandle(points[index].tangent2, rotation);
+                }
+                    
                 if (snap) newPos = SnapPoint(newPos);
                 if (newPos != lastPos) RecordUndo("Move Tangents");
                 points[index].SetTangent2Position(newPos);

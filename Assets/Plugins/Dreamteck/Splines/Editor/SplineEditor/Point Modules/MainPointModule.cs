@@ -14,6 +14,7 @@ namespace Dreamteck.Splines.Editor
         private Rect rect;
         private bool drag = false;
         private bool finalize = false;
+        private bool pointsMoved = false;
 
         public bool isDragging
         {
@@ -22,8 +23,6 @@ namespace Dreamteck.Splines.Editor
                 return drag && rect.width >= minimumRectSize && rect.height >= minimumRectSize;
             }
         }
-
-
 
         public MainPointModule(SplineEditor editor) : base(editor)
         {
@@ -80,8 +79,8 @@ namespace Dreamteck.Splines.Editor
 
         public override void DrawScene()
         {
+            if (eventModule.v) return;
             Transform camTransform = SceneView.currentDrawingSceneView.camera.transform;
-
             if (!drag)
             {
                 if (finalize)
@@ -111,7 +110,7 @@ namespace Dreamteck.Splines.Editor
                 rect = new Rect(Mathf.Min(rectStart.x, rectEnd.x), Mathf.Min(rectStart.y, rectEnd.y), Mathf.Abs(rectEnd.x - rectStart.x), Mathf.Abs(rectEnd.y - rectStart.y));
                 if (rect.width >= minimumRectSize && rect.height >= minimumRectSize)
                 {
-                    Color col = SplinePrefs.highlightColor;
+                    Color col = highlightColor;
                     col.a = 0.4f;
                     Handles.BeginGUI();
                     EditorGUI.DrawRect(rect, col);
@@ -128,21 +127,23 @@ namespace Dreamteck.Splines.Editor
             for (int i = 0; i < points.Length; i++)
             {
                 if (isClosed && i == points.Length - 1) break;
-                bool moved = false;
                 bool isSelected = selectedPoints.Contains(i);
                 Vector3 lastPos = points[i].position;
                 Handles.color = Color.clear;
-                if (SplinePrefs.showPointNumbers && camTransform.InverseTransformPoint(points[i].position).z > 0f)
+                if (showPointNumbers && camTransform.InverseTransformPoint(points[i].position).z > 0f)
                 {
                     Handles.Label(points[i].position + Camera.current.transform.up * HandleUtility.GetHandleSize(points[i].position) * 0.3f, (i + 1).ToString());
                 }
-                if (excludeSelected && isSelected) SplineEditorHandles.FreeMoveRectangle(points[i].position, HandleUtility.GetHandleSize(points[i].position) * 0.1f);
-                else  points[i].SetPosition(SplineEditorHandles.FreeMoveRectangle(points[i].position, HandleUtility.GetHandleSize(points[i].position) * 0.1f));
+                if (!eventModule.alt)
+                {
+                    if (excludeSelected && isSelected) SplineEditorHandles.FreeMoveRectangle(points[i].position, HandleUtility.GetHandleSize(points[i].position) * 0.1f);
+                    else points[i].SetPosition(SplineEditorHandles.FreeMoveRectangle(points[i].position, HandleUtility.GetHandleSize(points[i].position) * 0.1f));
+                }
                 
                 if (lastPos != points[i].position)
                 {
                     RecordUndo("Move Points");
-                    moved = true;
+                    pointsMoved = true;
                     if (isSelected)
                     {
                         for (int n = 0; n < selectedPoints.Count; n++)
@@ -156,13 +157,20 @@ namespace Dreamteck.Splines.Editor
                 }
                 
 
-                if (!moved && editor.eventModule.mouseLeftUp)
+                if (!pointsMoved && !eventModule.alt && editor.eventModule.mouseLeftUp)
                 {
                     if(SplineEditorHandles.HoverArea(points[i].position, 0.12f))
                     {
-                        if (eventModule.shift) ShiftSelect(i, points.Length);
-                        else if (eventModule.control) AddPointSelection(i);
-                        else SelectPoint(i);
+                        if (eventModule.control && selectedPoints.Contains(i))
+                        {
+                            DeselectPoint(i);
+                        }
+                        else
+                        {
+                            if (eventModule.shift) ShiftSelect(i, points.Length);
+                            else if (eventModule.control) AddPointSelection(i);
+                            else SelectPoint(i);
+                        }
                     }
                 }
                 if (!excludeSelected || !isSelected)
@@ -170,13 +178,12 @@ namespace Dreamteck.Splines.Editor
                     Handles.color = color;
                      if (isSelected)
                     {
-                        Handles.color = SplinePrefs.highlightColor;
+                        Handles.color = highlightColor;
                         Handles.DrawWireDisc(points[i].position, -SceneView.currentDrawingSceneView.camera.transform.forward, HandleUtility.GetHandleSize(points[i].position) * 0.14f);
                     } else Handles.color = color;
                     Handles.DrawSolidDisc(points[i].position, -SceneView.currentDrawingSceneView.camera.transform.forward, HandleUtility.GetHandleSize(points[i].position) * 0.09f);
                     Handles.color = Color.white;
                 }
-                moved = false;
             }
             GUI.skin.label.alignment = originalAlignment;
             GUI.skin.label.normal.textColor = originalColor;
@@ -207,6 +214,10 @@ namespace Dreamteck.Splines.Editor
             if (isDragging)
             {
                 if (eventModule.alt || !SceneView.currentDrawingSceneView.camera.pixelRect.Contains(Event.current.mousePosition) || !eventModule.mouseLeft) FinishDrag();
+            }
+            if (eventModule.mouseLeftUp)
+            {
+                pointsMoved = false;
             }
         }
 
