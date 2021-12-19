@@ -2,7 +2,6 @@ using System.IO;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Networking;
 using TMPro;
 
 public class SongManager : MonoBehaviour
@@ -14,7 +13,6 @@ public class SongManager : MonoBehaviour
     private int _cursor = 0;            //Manages cursor position in the song list
     private int _delay = 300;           //How many updates to delay any input for
     private bool _songSwitch = true;    //Changes the currently playing song preview
-    private float _songTimer = 0f;      //Track the length of time the song has been playing
 
     public class SongPackage
     {
@@ -147,12 +145,16 @@ public class SongManager : MonoBehaviour
             {
                 if (PlayerPrefs.GetInt("GameMode") == 0)
                 {
+                    //Register the selected song
+                    PlayerPrefs.SetInt("selectedSong", _cursor);
                     //transition to the game
                     Loader.Load(Loader.Scene.Gameplay);
                 }
 
                 if (PlayerPrefs.GetInt("GameMode") == 1)
                 {
+                    //Register the selected song
+                    PlayerPrefs.SetInt("selectedSong", _cursor);
                     //transition to the editor
                     Loader.Load(Loader.Scene.Editor);
                 }
@@ -161,6 +163,8 @@ public class SongManager : MonoBehaviour
             //Logic to move cancel or move back a screen - matters for options menu
             else if (GameObject.Find("SceneInput").GetComponent<ProcessInput>().backPressed == true)
             {
+                //Stop song preview
+                GameObject.Find("Main Camera").GetComponent<AudioSource>().Stop();
                 //Return to title screen
                 Loader.Load(Loader.Scene.TitleScreen);
             }
