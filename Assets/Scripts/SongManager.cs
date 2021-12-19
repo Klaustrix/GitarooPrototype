@@ -8,7 +8,8 @@ public class SongManager : MonoBehaviour
 {
     public GameObject tilePrefab;       //A prefab for note tiles on the song menu
     public int menuCursor = 0;          //A variable to track the cursor position on the menu
-
+    
+    private Vector3 _defaultUITilePos;  //The default position for UI tile components
     private int _timer = 0;             //Manages input delay
     private int _cursor = 0;            //Manages cursor position in the song list
     private int _delay = 300;           //How many updates to delay any input for
@@ -56,6 +57,7 @@ public class SongManager : MonoBehaviour
         ScanFiles();
 
         int counter = 0;
+        _defaultUITilePos = new Vector3((Screen.width / 2 + (Screen.width / 4)), (Screen.height / 2), 0);
 
         //For each song package, instantiate the song's information and files into its song package & create a UI Tile for it
         foreach (SongPackage newPackage in songArchive)
@@ -77,14 +79,13 @@ public class SongManager : MonoBehaviour
 
             //-------------UI TILES-------------------
             //Create an instance of the UI Tile
-            GameObject tile = Instantiate(tilePrefab) as GameObject;
+            GameObject tile = Instantiate(tilePrefab,tilePrefab.transform.position,tilePrefab.transform.rotation) as GameObject;
             
             //Make the note a child of the canvas object
-            tile.transform.SetParent(GameObject.Find("Canvas").transform);
-            
+            tile.transform.SetParent(GameObject.Find("Canvas").transform,false);
+
             //Set the default position of the tile, height adjusted by value
-            Vector3 tileAdjust = new Vector3(764, (271-(counter*100)), 0);
-            tile.transform.position = tileAdjust;
+            tile.transform.position = _defaultUITilePos;
             
             //Set the song tile text
             tile.transform.Find("SongTitle").GetComponent<TextMeshProUGUI>().text = newPackage.songTitle;
@@ -172,27 +173,33 @@ public class SongManager : MonoBehaviour
             //Update the tile positions in the song list
             int _counter2 = 0;
 
-            foreach (GameObject tile in tileList)
+            if (_songSwitch == true)
             {
-                //Check the difference between where the cursor is and where we are in the song list
-                int _difference = Mathf.Abs(_cursor - _counter2);
+                foreach (GameObject tile in tileList)
+                {
+                    //Check the difference between where the cursor is and where we are in the song list
+                    int _difference = Mathf.Abs(_cursor - _counter2);
 
-                //The highlighted song pokes out a bit
-                if (_counter2 == _cursor)
-                {
-                    tile.transform.position = new Vector3(744, 271, 0);
-                }
-                //The other songs are +/- 100px for each position above or below the cursor
-                else if (_counter2 < _cursor)
-                {
-                    tile.transform.position = new Vector3(764, 271 + (100 * _difference), 0);
-                }
-                else if (_counter2 > _cursor)
-                {
-                    tile.transform.position = new Vector3(764, 271 - (100 * _difference), 0);
-                }
+                    //The highlighted song pokes out a bit
+                    if (_counter2 == _cursor)
+                    {
+                        tile.transform.position = _defaultUITilePos;
+                        tile.transform.position -= new Vector3(20, 10, 0);
+                    }
+                    //The other songs are +/- 100px for each position above or below the cursor
+                    else if (_counter2 < _cursor)
+                    {
+                        tile.transform.position = _defaultUITilePos;
+                        tile.transform.position += new Vector3(0, (110 * _difference), 0);
+                    }
+                    else if (_counter2 > _cursor)
+                    {
+                        tile.transform.position = _defaultUITilePos;
+                        tile.transform.position -= new Vector3(0, (110 * _difference), 0);
+                    }
 
-                _counter2++;
+                    _counter2++;
+                }
             }
         }
         else if (_timer >= 1)
@@ -232,8 +239,16 @@ public class SongManager : MonoBehaviour
         {
             if (GameObject.Find("Main Camera").GetComponent<AudioSource>().time > songArchive[_cursor].songPreviewStartTime + 10f)
             {
-                GameObject.Find("Main Camera").GetComponent<AudioSource>().Stop();
-                GameObject.Find("Main Camera").GetComponent<AudioSource>().Play();
+                if (GameObject.Find("Main Camera").GetComponent<AudioSource>().volume > 0)
+                {
+                    GameObject.Find("Main Camera").GetComponent<AudioSource>().volume -= 0.001f;
+                }
+                else
+                {
+                    GameObject.Find("Main Camera").GetComponent<AudioSource>().Stop();
+                    GameObject.Find("Main Camera").GetComponent<AudioSource>().Play();
+                    GameObject.Find("Main Camera").GetComponent<AudioSource>().volume = 1;
+                }
             }
         }
     }
