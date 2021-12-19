@@ -48,11 +48,13 @@ public class TitleUI : MonoBehaviour
                     //Song Select
                     case 0:
                         //transition to song select with gameMode0
+                        PlayerPrefs.SetInt("gameMode", 0);
                         Loader.Load(Loader.Scene.SongMenu);
                         break;
                     //Song Editor
                     case 1:
                         //transition to song select with gameMode1
+                        PlayerPrefs.SetInt("gameMode", 1);
                         Loader.Load(Loader.Scene.SongMenu);
                         break;
                     //Settings Menu
