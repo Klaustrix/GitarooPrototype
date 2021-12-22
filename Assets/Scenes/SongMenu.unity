@@ -133,6 +133,7 @@ GameObject:
   m_Component:
   - component: {fileID: 310040526}
   - component: {fileID: 310040525}
+  - component: {fileID: 310040527}
   m_Layer: 0
   m_Name: SongLibrary
   m_TagString: Untagged
@@ -152,9 +153,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d57756f4db9b2a045b233117c21b25e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  tilePrefab: {fileID: 5226225144195491213, guid: c9488c2b8f48e374cb20e62b76a4d74e,
-    type: 3}
-  menuCursor: 0
+  songsLoaded: 0
 --- !u!4 &310040526
 Transform:
   m_ObjectHideFlags: 0
@@ -170,6 +169,22 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &310040527
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 310040524}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a8a239d0155abef469e6486387882f6f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  tilePrefab: {fileID: 5226225144195491213, guid: c9488c2b8f48e374cb20e62b76a4d74e,
+    type: 3}
+  cursor: 0
+  songSwitch: 1
 --- !u!1 &395055165
 GameObject:
   m_ObjectHideFlags: 0

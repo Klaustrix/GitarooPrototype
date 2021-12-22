@@ -12,7 +12,9 @@ public class TitleUI : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-
+        //Initialise player prefs variables
+        PlayerPrefs.SetInt("GameMode", 0);
+        PlayerPrefs.SetInt("CursorPos", 0);
     }
 
     // Update is called once per frame
