@@ -27,197 +27,192 @@ public class SongMenuUI : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //Ensure the songs have been loaded
-        if (GameObject.Find("SongLibrary").GetComponent<SongManager>().songsLoaded == true)
+        //Only generate the tiles once
+        if (tilesMade == false)
         {
-            //Only generate the tiles once
-            if (tilesMade == false)
+            //Generate the UI tiles for each song
+            foreach (SongPackage newPackage in GameObject.Find("SongLibrary").GetComponent<SongManager>().songArchive)
             {
-                //Generate the UI tiles for each song
-                foreach (SongPackage newPackage in GameObject.Find("SongLibrary").GetComponent<SongManager>().songArchive)
-                {
-                    //Create an instance of the UI Tile
-                    GameObject tile = Instantiate(tilePrefab, tilePrefab.transform.position, tilePrefab.transform.rotation) as GameObject;
+                //Create an instance of the UI Tile
+                GameObject tile = Instantiate(tilePrefab, tilePrefab.transform.position, tilePrefab.transform.rotation) as GameObject;
 
-                    //Make the note a child of the canvas object
-                    tile.transform.SetParent(GameObject.Find("Canvas").transform, false);
+                //Make the note a child of the canvas object
+                tile.transform.SetParent(GameObject.Find("Canvas").transform, false);
 
-                    //Set the default position of the tile, height adjusted by value
-                    tile.transform.position = _defaultUITilePos;
+                //Set the default position of the tile, height adjusted by value
+                tile.transform.position = _defaultUITilePos;
 
-                    //Set the song tile text
-                    tile.transform.Find("SongTitle").GetComponent<TextMeshProUGUI>().text = newPackage.songTitle;
-                    tile.transform.Find("SongArtist").GetComponent<TextMeshProUGUI>().text = newPackage.songArtist;
+                //Set the song tile text
+                tile.transform.Find("SongTitle").GetComponent<TextMeshProUGUI>().text = newPackage.songTitle;
+                tile.transform.Find("SongArtist").GetComponent<TextMeshProUGUI>().text = newPackage.songArtist;
 
-                    //Add the tile to the list of tiles
-                    tileList.Add(tile);
-                }
-
-                tilesMade = true;
+                //Add the tile to the list of tiles
+                tileList.Add(tile);
             }
-            //Once the tiles have been made allow manipulation of them
-            else
+
+            tilesMade = true;
+        }
+        //Once the tiles have been made allow manipulation of them
+        else
+        {
+            //Update the tile positions in the song list
+            int _counter2 = 0;
+
+            //Get a reference to the song archive
+            List<SongPackage> _songArchive = GameObject.Find("SongLibrary").GetComponent<SongManager>().songArchive;
+
+            if (_timer == 0)
             {
-                //Update the tile positions in the song list
-                int _counter2 = 0;
-
-                //Get a reference to the song archive
-                List<SongPackage> _songArchive = GameObject.Find("SongLibrary").GetComponent<SongManager>().songArchive;
-
-                if (_timer == 0)
+                //Logic to move cursor up
+                if (GameObject.Find("SceneInput").GetComponent<ProcessInput>().upPressed == true)
                 {
-                    //Logic to move cursor up
-                    if (GameObject.Find("SceneInput").GetComponent<ProcessInput>().upPressed == true)
+                    //Loop around the list
+                    if (cursor == 0)
                     {
-                        //Loop around the list
-                        if (cursor == 0)
-                        {
-                            cursor = (GameObject.Find("SongLibrary").GetComponent<SongManager>().songArchive.Count - 1);
-                        }
-                        //Move the cursor up the list
-                        else if (cursor > 0 && _timer == 0)
-                        {
-                            cursor--;
-                        }
-
-                        _timer = _delay;
-                        songSwitch = true;
+                        cursor = (GameObject.Find("SongLibrary").GetComponent<SongManager>().songArchive.Count - 1);
+                    }
+                    //Move the cursor up the list
+                    else if (cursor > 0 && _timer == 0)
+                    {
+                        cursor--;
                     }
 
-                    //Logic to move cursor down
-                    else if (GameObject.Find("SceneInput").GetComponent<ProcessInput>().downPressed == true)
-                    {
-                        //Loop around the list
-                        if (cursor == (GameObject.Find("SongLibrary").GetComponent<SongManager>().songArchive.Count - 1))
-                        {
-                            cursor = 0;
-                        }
-                        //Move the cursor down the list
-                        else if (cursor < (GameObject.Find("SongLibrary").GetComponent<SongManager>().songArchive.Count - 1) && _timer == 0)
-                        {
-                            cursor++;
-                        }
-
-                        _timer = _delay;
-                        songSwitch = true;
-                    }
-
-                    //Logic to make a selection from the menu
-                    else if (GameObject.Find("SceneInput").GetComponent<ProcessInput>().selectPressed == true)
-                    {
-                        //Save the selected song data
-                        //SavePackage(songArchive[_cursor]);
-
-                        //Save the cursor position
-                        PlayerPrefs.SetInt("CursorPos", cursor);
-
-                        if (PlayerPrefs.GetInt("GameMode") == 0)
-                        {
-                            //transition to the game
-                            Loader.Load(Loader.Scene.Gameplay);
-                        }
-
-                        if (PlayerPrefs.GetInt("GameMode") == 1)
-                        {
-                            //transition to the editor
-                            Loader.Load(Loader.Scene.Editor);
-                        }
-                    }
-
-                    //Logic to move cancel or move back a screen - matters for options menu
-                    else if (GameObject.Find("SceneInput").GetComponent<ProcessInput>().backPressed == true)
-                    {
-                        //Stop song preview
-                        GameObject.Find("Main Camera").GetComponent<AudioSource>().Stop();
-                        //Return to title screen
-                        Loader.Load(Loader.Scene.TitleScreen);
-                    }
-
-                }
-                else if (_timer >= 1)
-                {
-                    _timer--;
+                    _timer = _delay;
+                    songSwitch = true;
                 }
 
-                //Modify tiles based on the song manager data
-                if (songSwitch == true)
+                //Logic to move cursor down
+                else if (GameObject.Find("SceneInput").GetComponent<ProcessInput>().downPressed == true)
                 {
-                    foreach (GameObject tile in tileList)
+                    //Loop around the list
+                    if (cursor == (GameObject.Find("SongLibrary").GetComponent<SongManager>().songArchive.Count - 1))
                     {
-                        //Check the difference between where the cursor is and where we are in the song list
-                        int _difference = Mathf.Abs(cursor - _counter2);
+                        cursor = 0;
+                    }
+                    //Move the cursor down the list
+                    else if (cursor < (GameObject.Find("SongLibrary").GetComponent<SongManager>().songArchive.Count - 1) && _timer == 0)
+                    {
+                        cursor++;
+                    }
 
-                        //The highlighted song pokes out a bit
-                        if (_counter2 == cursor)
-                        {
-                            tile.transform.position = _defaultUITilePos;
-                            tile.transform.position -= new Vector3(20, 10, 0);
-                        }
-                        //The other songs are +/- 100px for each position above or below the cursor
-                        else if (_counter2 < cursor)
-                        {
-                            tile.transform.position = _defaultUITilePos;
-                            tile.transform.position += new Vector3(0, (110 * _difference), 0);
-                        }
-                        else if (_counter2 > cursor)
-                        {
-                            tile.transform.position = _defaultUITilePos;
-                            tile.transform.position -= new Vector3(0, (110 * _difference), 0);
-                        }
+                    _timer = _delay;
+                    songSwitch = true;
+                }
 
-                        _counter2++;
+                //Logic to make a selection from the menu
+                else if (GameObject.Find("SceneInput").GetComponent<ProcessInput>().selectPressed == true)
+                {
+                    //Save the selected song data
+                    //SavePackage(songArchive[_cursor]);
+
+                    //Save the cursor position
+                    PlayerPrefs.SetInt("CursorPos", cursor);
+
+                    if (PlayerPrefs.GetInt("GameMode") == 1)
+                    {
+                        //transition to the game
+                        Loader.Load(Loader.Scene.Gameplay);
+                    }
+
+                    if (PlayerPrefs.GetInt("GameMode") == 2)
+                    {
+                        //transition to the editor
+                        Loader.Load(Loader.Scene.Editor);
                     }
                 }
 
-                //Create a reference to the scene's audio source
-                AudioSource sceneAudio = GameObject.Find("Main Camera").GetComponent<AudioSource>();
-
-                //Play the preview for the currently highlighted song
-                if (songSwitch == true)
+                //Logic to move cancel or move back a screen - matters for options menu
+                else if (GameObject.Find("SceneInput").GetComponent<ProcessInput>().backPressed == true)
                 {
-                    //Fade the volume of any currently playing song
+                    //Stop song preview
+                    GameObject.Find("Main Camera").GetComponent<AudioSource>().Stop();
+                    //Return to title screen
+                    Loader.Load(Loader.Scene.TitleScreen);
+                }
+
+            }
+            else if (_timer >= 1)
+            {
+                _timer--;
+            }
+
+            //Modify tiles based on the song manager data
+            if (songSwitch == true)
+            {
+                foreach (GameObject tile in tileList)
+                {
+                    //Check the difference between where the cursor is and where we are in the song list
+                    int _difference = Mathf.Abs(cursor - _counter2);
+
+                    //The highlighted song pokes out a bit
+                    if (_counter2 == cursor)
+                    {
+                        tile.transform.position = _defaultUITilePos;
+                        tile.transform.position -= new Vector3(20, 10, 0);
+                    }
+                    //The other songs are +/- 100px for each position above or below the cursor
+                    else if (_counter2 < cursor)
+                    {
+                        tile.transform.position = _defaultUITilePos;
+                        tile.transform.position += new Vector3(0, (110 * _difference), 0);
+                    }
+                    else if (_counter2 > cursor)
+                    {
+                        tile.transform.position = _defaultUITilePos;
+                        tile.transform.position -= new Vector3(0, (110 * _difference), 0);
+                    }
+
+                    _counter2++;
+                }
+            }
+
+            //Create a reference to the scene's audio source
+            AudioSource sceneAudio = GameObject.Find("Main Camera").GetComponent<AudioSource>();
+
+            //Play the preview for the currently highlighted song
+            if (songSwitch == true)
+            {
+                //Fade the volume of any currently playing song
+                if (sceneAudio.volume > 0)
+                {
+                    sceneAudio.volume -= 0.001f;
+                }
+                else
+                {
+                    //Stop the current song
+                    sceneAudio.Stop();
+
+                    //Load the new song into the audio source on the camera
+                    sceneAudio.clip = GameObject.Find("SongLibrary").GetComponent<SongManager>().songArchive[cursor].songAudio;
+
+                    //Restore volume
+                    sceneAudio.volume = 1f;
+
+                    //Play the new song
+                    sceneAudio.PlayScheduled(GameObject.Find("SongLibrary").GetComponent<SongManager>().songArchive[cursor].songPreviewStartTime);
+
+                    //Reset the switch
+                    GameObject.Find("SongLibrary").GetComponent<SongMenuUI>().songSwitch = false;
+                }
+            }
+
+            //Loop the song preview
+            if (sceneAudio.isPlaying)
+            {
+                if (sceneAudio.time > GameObject.Find("SongLibrary").GetComponent<SongManager>().songArchive[cursor].songPreviewStartTime + 10f)
+                {
                     if (sceneAudio.volume > 0)
                     {
-                        sceneAudio.volume -= 0.001f;
+                        sceneAudio.volume -= 0.0015f;
                     }
                     else
                     {
-                        //Stop the current song
                         sceneAudio.Stop();
-
-                        //Load the new song into the audio source on the camera
-                        sceneAudio.clip = GameObject.Find("SongLibrary").GetComponent<SongManager>().songArchive[cursor].songAudio;
-
-                        //Restore volume
-                        sceneAudio.volume = 1f;
-
-                        //Play the new song
-                        sceneAudio.PlayScheduled(GameObject.Find("SongLibrary").GetComponent<SongManager>().songArchive[cursor].songPreviewStartTime);
-
-                        //Reset the switch
-                        GameObject.Find("SongLibrary").GetComponent<SongMenuUI>().songSwitch = false;
-                    }
-                }
-
-                //Loop the song preview
-                if (sceneAudio.isPlaying)
-                {
-                    if (sceneAudio.time > GameObject.Find("SongLibrary").GetComponent<SongManager>().songArchive[cursor].songPreviewStartTime + 10f)
-                    {
-                        if (sceneAudio.volume > 0)
-                        {
-                            sceneAudio.volume -= 0.001f;
-                        }
-                        else
-                        {
-                            sceneAudio.Stop();
-                            sceneAudio.Play();
-                            sceneAudio.volume = 1;
-                        }
+                        sceneAudio.Play();
+                        sceneAudio.volume = 1;
                     }
                 }
             }
         }
-
     }
 }

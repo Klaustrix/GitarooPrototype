@@ -22,6 +22,7 @@ public class SongPackage
     public List<string> songP2Events_standard = new List<string>();
     public List<string> songP2Events_master = new List<string>();
 
+    //Enables multiple instances of this class to be invoked
     public IEnumerator GetEnumerator()
     {
         return (IEnumerator)this;
