@@ -13,11 +13,12 @@ public class Activator : MonoBehaviour
     public static Vector3 centrePosition;       //A public reference to the position at the centre of the screen
 
     //Variables for following the current trace line
+    public int editMode = 0;                    //Adjusts the current editor mode 0 = Edit; 1 = Playback;
     public static double currentTracePosition;  //The activator's current position along the trace line
     public static Vector3 futureTracePosition;  //The activator's future position along the current trace line
     private SplineComputer _activeTraceSpline;  //A reference to the spline computer of the current trace line
     private SplineFollower _follower;           //A reference to the follower component
-
+    
     //Variables for clipping the trace line being followed
     public float noteClipPercent;
 
@@ -26,7 +27,7 @@ public class Activator : MonoBehaviour
 
     //Variables for note logic
     private GameObject noteObject;              //Contains a reference to the current note gameobject
-    private bool _active = false;               //Toggles if currently in contact with a note object - Not really used
+    private bool _active = false;               //Toggles if currently in contact with a note object - Implemeneted but not referenced
     private bool _noteWindow = false;           //Toggles while in contact with the note target
     private bool _noteActive = false;           //Toggles if you successfully hit a note within the window
     private bool _noteEndWindow = false;        //Toggles while in contact with the note end cap
@@ -41,7 +42,7 @@ public class Activator : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        _activeTraceSpline = GameObject.Find("TraceLine").GetComponent<SplineComputer>();
+        //Reference to the spline follower component of this game object
         _follower = GetComponent<SplineFollower>();
 
     }
@@ -49,24 +50,29 @@ public class Activator : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //Publicly available position of the activator
-        centrePosition = transform.position;
 
-        //Update public stats for the trace line being followed
-        SplineStats();
-
-        //Update controller input
-        NoteHitLogic();
-
-        //Clip the trace line as it passes over the centre of the screen
-        if (_activeTraceSpline != null)
+        //When in play mode do ths following...
+        if (editMode == 3)
         {
-            _activeTraceSpline.GetComponent<SplineRenderer>().clipFrom = currentTracePosition;
+            //Publicly available position of the activator
+            centrePosition = transform.position;
+
+            //Update public stats for the trace line being followed
+            UpdateDirection();
+
+            //Update controller input
+            NoteHitLogic();
+
+            //Clip the trace line as it passes over the centre of the screen
+            if (_activeTraceSpline != null)
+            {
+                _activeTraceSpline.GetComponent<SplineRenderer>().clipFrom = currentTracePosition;
+            }
         }
     }
 
     //Checks the position of a location just slightly ahead of where we are along the current spline
-    private void SplineStats()
+    private void UpdateDirection()
     {
         //The total % travelled along the current spline being followed
         currentTracePosition = _follower.result.percent;
@@ -229,5 +235,11 @@ public class Activator : MonoBehaviour
             greatNotes++;
             songScore += 100;
         }
+    }
+
+    //Set the Spline Computer of the trace line to follow
+    public void SetTraceLine(SplineComputer _newTraceLine)
+    {
+        _activeTraceSpline = _newTraceLine;
     }
 }
