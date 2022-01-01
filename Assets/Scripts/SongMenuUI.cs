@@ -7,7 +7,7 @@ public class SongMenuUI : MonoBehaviour
 {
     public GameObject tilePrefab;       //A prefab for note tiles on the song menu
     public int cursor = 0;              //Manages cursor position in the song list
-    public bool songSwitch = true;      //Changes the currently playing song preview
+    public bool cursorMoved = true;      //Changes the currently playing song preview
 
     private Vector3 _defaultUITilePos;  //The default position for UI tile components
     private bool tilesMade = false;     //Prevent tiles being created more than once
@@ -22,6 +22,9 @@ public class SongMenuUI : MonoBehaviour
     {
         //Set a position aligned to the screen
         _defaultUITilePos = new Vector3((Screen.width / 2 + (Screen.width / 4)), (Screen.height / 2), 0);
+
+        //Initialise the tile list
+        tileList.Clear();
     }
 
     // Update is called once per frame
@@ -31,7 +34,7 @@ public class SongMenuUI : MonoBehaviour
         if (tilesMade == false)
         {
             //Generate the UI tiles for each song
-            foreach (SongPackage newPackage in GameObject.Find("SongLibrary").GetComponent<SongManager>().songArchive)
+            foreach (SongPackage newPackage in GameObject.Find("SongManager").GetComponent<SongManager>().songArchive)
             {
                 //Create an instance of the UI Tile
                 GameObject tile = Instantiate(tilePrefab, tilePrefab.transform.position, tilePrefab.transform.rotation) as GameObject;
@@ -58,9 +61,7 @@ public class SongMenuUI : MonoBehaviour
             //Update the tile positions in the song list
             int _counter2 = 0;
 
-            //Get a reference to the song archive
-            List<SongPackage> _songArchive = GameObject.Find("SongLibrary").GetComponent<SongManager>().songArchive;
-
+            //Timer allows input delay
             if (_timer == 0)
             {
                 //Logic to move cursor up
@@ -69,7 +70,7 @@ public class SongMenuUI : MonoBehaviour
                     //Loop around the list
                     if (cursor == 0)
                     {
-                        cursor = (GameObject.Find("SongLibrary").GetComponent<SongManager>().songArchive.Count - 1);
+                        cursor = (GameObject.Find("SongManager").GetComponent<SongManager>().songArchive.Count - 1);
                     }
                     //Move the cursor up the list
                     else if (cursor > 0 && _timer == 0)
@@ -78,35 +79,35 @@ public class SongMenuUI : MonoBehaviour
                     }
 
                     _timer = _delay;
-                    songSwitch = true;
+                    cursorMoved = true;
                 }
 
                 //Logic to move cursor down
                 else if (GameObject.Find("SceneInput").GetComponent<ProcessInput>().downPressed == true)
                 {
                     //Loop around the list
-                    if (cursor == (GameObject.Find("SongLibrary").GetComponent<SongManager>().songArchive.Count - 1))
+                    if (cursor == (GameObject.Find("SongManager").GetComponent<SongManager>().songArchive.Count - 1))
                     {
                         cursor = 0;
                     }
                     //Move the cursor down the list
-                    else if (cursor < (GameObject.Find("SongLibrary").GetComponent<SongManager>().songArchive.Count - 1) && _timer == 0)
+                    else if (cursor < (GameObject.Find("SongManager").GetComponent<SongManager>().songArchive.Count - 1) && _timer == 0)
                     {
                         cursor++;
                     }
 
                     _timer = _delay;
-                    songSwitch = true;
+                    cursorMoved = true;
                 }
 
                 //Logic to make a selection from the menu
                 else if (GameObject.Find("SceneInput").GetComponent<ProcessInput>().selectPressed == true)
                 {
-                    //Save the selected song data
-                    //SavePackage(songArchive[_cursor]);
-
-                    //Save the cursor position
+                    //Save the cursor position, can also be used to identify which song was selected
                     PlayerPrefs.SetInt("CursorPos", cursor);
+
+                    //Run the code to reset this scene for future use
+                    PrepareToExit();
 
                     if (PlayerPrefs.GetInt("GameMode") == 1)
                     {
@@ -124,8 +125,14 @@ public class SongMenuUI : MonoBehaviour
                 //Logic to move cancel or move back a screen - matters for options menu
                 else if (GameObject.Find("SceneInput").GetComponent<ProcessInput>().backPressed == true)
                 {
-                    //Stop song preview
-                    GameObject.Find("Main Camera").GetComponent<AudioSource>().Stop();
+                    //Run the code to reset this scene for future use
+                    PrepareToExit();
+
+                    //Destroy the tile list
+                    foreach (GameObject tile in tileList)
+                    {
+                        Destroy(tile);
+                    }
                     //Return to title screen
                     Loader.Load(Loader.Scene.TitleScreen);
                 }
@@ -137,7 +144,7 @@ public class SongMenuUI : MonoBehaviour
             }
 
             //Modify tiles based on the song manager data
-            if (songSwitch == true)
+            if (cursorMoved == true)
             {
                 foreach (GameObject tile in tileList)
                 {
@@ -170,7 +177,7 @@ public class SongMenuUI : MonoBehaviour
             AudioSource sceneAudio = GameObject.Find("Main Camera").GetComponent<AudioSource>();
 
             //Play the preview for the currently highlighted song
-            if (songSwitch == true)
+            if (cursorMoved == true)
             {
                 //Fade the volume of any currently playing song
                 if (sceneAudio.volume > 0)
@@ -183,23 +190,23 @@ public class SongMenuUI : MonoBehaviour
                     sceneAudio.Stop();
 
                     //Load the new song into the audio source on the camera
-                    sceneAudio.clip = GameObject.Find("SongLibrary").GetComponent<SongManager>().songArchive[cursor].songAudio;
+                    sceneAudio.clip = GameObject.Find("SongManager").GetComponent<SongManager>().songArchive[cursor].songAudio;
 
                     //Restore volume
                     sceneAudio.volume = 1f;
 
                     //Play the new song
-                    sceneAudio.PlayScheduled(GameObject.Find("SongLibrary").GetComponent<SongManager>().songArchive[cursor].songPreviewStartTime);
+                    sceneAudio.PlayScheduled(GameObject.Find("SongManager").GetComponent<SongManager>().songArchive[cursor].songPreviewStartTime);
 
                     //Reset the switch
-                    GameObject.Find("SongLibrary").GetComponent<SongMenuUI>().songSwitch = false;
+                    GameObject.Find("Canvas").GetComponent<SongMenuUI>().cursorMoved = false;
                 }
             }
 
             //Loop the song preview
             if (sceneAudio.isPlaying)
             {
-                if (sceneAudio.time > GameObject.Find("SongLibrary").GetComponent<SongManager>().songArchive[cursor].songPreviewStartTime + 10f)
+                if (sceneAudio.time > GameObject.Find("SongManager").GetComponent<SongManager>().songArchive[cursor].songPreviewStartTime + 10f)
                 {
                     if (sceneAudio.volume > 0)
                     {
@@ -214,5 +221,11 @@ public class SongMenuUI : MonoBehaviour
                 }
             }
         }
+    }
+
+    void PrepareToExit()
+    {
+        //Stop song preview
+        GameObject.Find("Main Camera").GetComponent<AudioSource>().Stop();
     }
 }

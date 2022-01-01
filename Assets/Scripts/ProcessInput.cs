@@ -16,7 +16,12 @@ public class ProcessInput : MonoBehaviour
     public bool rightPressed;           //
     public bool selectPressed;          //
     public bool backPressed;            //
-        
+
+    public Vector2 moveDirection;       //The x and y values of the analogue stick
+    public float smoothInputSpeed;
+    public Vector2 stickInput;
+    float deadzone = 0.25f;
+
     private void Start()
     {
         //A reference to the player input object for the scene
@@ -94,7 +99,6 @@ public class ProcessInput : MonoBehaviour
     }
     void OnAim(InputValue value)
     {
-        //Record the x and y values of the analogue stick
         aimDirection = value.Get<Vector2>();
     }
     void OnPause(InputValue value)
@@ -103,89 +107,17 @@ public class ProcessInput : MonoBehaviour
 
     }
 
-    //Control Inputs - Edit - Attack Mode
-    void OnTraceline(InputValue value)
+    //Control Inputs - Edit
+    void OnMoveCursor(InputValue value)
     {
-        //Instructions
+        moveDirection = value.Get<Vector2>();
+        smoothInputSpeed = 0.01f;
 
-    }
-    void OnNote(InputValue value)
-    {
-        //Instructions
-
-    }
-    void OnForward(InputValue value)
-    {
-        //Instructions
-
-    }
-    void OnBackward(InputValue value)
-    {
-        //Instructions
-
-    }
-    void OnRotateCW(InputValue value)
-    {
-        //Instructions
-
-    }
-    void OnRotateCCW(InputValue value)
-    {
-        //Instructions
-
-    }
-    void OnModify(InputValue value)
-    {
-        //Instructions
-
-    }
-    void OnCycleNoteTimingUp(InputValue value)
-    {
-        //Instructions
-
-    }
-    void OnCycleNoteTimingDown(InputValue value)
-    {
-        //Instructions
-
-        
-    }
-    void OnChangeGameMode(InputValue value)
-    {
-        //Instructions
-
-    }
-    void OnSplit(InputValue value)
-    {
-        //Instructions
-
-    }
-    void OnMenu(InputValue value)
-    {
-        //Instructions
-
-    }
-
-    //Control Inputs - Edit - Defense Mode
-    void OnCreateNorthNote(InputValue value)
-    {
-        //Instructions
-
-    }
-    void OnCreateSouthNote(InputValue value)
-    {
-        //Instructions
-
-    }
-    void OnCreateEastNote(InputValue value)
-    {
-        //Instructions
-
-    }
-    void OnCreateWestNote(InputValue value)
-    {
-        //Instructions
-
+        stickInput = new Vector2(moveDirection.x, moveDirection.y);
+        if (stickInput.magnitude < deadzone)
+            stickInput = Vector2.zero;
+        else
+            stickInput = stickInput.normalized * ((stickInput.magnitude - deadzone) / (1 - deadzone));
     }
 }
 

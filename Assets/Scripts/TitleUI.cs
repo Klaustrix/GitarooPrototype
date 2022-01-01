@@ -5,9 +5,12 @@ using UnityEngine.InputSystem;
 
 public class TitleUI : MonoBehaviour
 {
-    private int _multiplier = 0;
+    private int _cursorPosition = 0;
     private int _timer = 0;
     private int _delay = 300;
+
+    private float _heightMod;
+    private float _widthMod;
 
     // Start is called before the first frame update
     void Start()
@@ -15,6 +18,11 @@ public class TitleUI : MonoBehaviour
         //Initialise player prefs variables
         PlayerPrefs.SetInt("GameMode", 0);
         PlayerPrefs.SetInt("CursorPos", 0);
+
+        //Set a position aligned to the screen
+        _heightMod = 12.5f;
+        _widthMod = 100f;
+
     }
 
     // Update is called once per frame
@@ -25,9 +33,9 @@ public class TitleUI : MonoBehaviour
             //Logic to move cursor up
             if (GameObject.Find("SceneInput").GetComponent<ProcessInput>().upPressed == true)
             {
-                if (_multiplier > 0)
+                if (_cursorPosition > 0)
                 {
-                    _multiplier--;
+                    _cursorPosition--;
                     _timer = _delay;
                 }
             }
@@ -35,9 +43,9 @@ public class TitleUI : MonoBehaviour
             //Logic to move cursor down
             else if (GameObject.Find("SceneInput").GetComponent<ProcessInput>().downPressed == true)
             {
-                if (_multiplier < 3)
+                if (_cursorPosition < 3)
                 {
-                    _multiplier++;
+                    _cursorPosition++;
                     _timer = _delay;
                 }
             }
@@ -45,7 +53,7 @@ public class TitleUI : MonoBehaviour
             //Logic to make a selection from the menu
             else if (GameObject.Find("SceneInput").GetComponent<ProcessInput>().selectPressed == true)
             {
-                switch (_multiplier)
+                switch (_cursorPosition)
                 {
                     //Song Select
                     case 0:
@@ -70,20 +78,36 @@ public class TitleUI : MonoBehaviour
                         break;
                 }
             }
-
-            //Logic to move cancel or move back a screen - matters for options menu
-            else if (GameObject.Find("SceneInput").GetComponent<ProcessInput>().backPressed == true)
-            {
-
-            }
         }
         else if (_timer >= 1)
         {
             _timer--;
         }
 
-        //Update the cursor position
-        transform.position = new Vector2(5.42f, (-1.07f - (0.93f * _multiplier)));
+        //Adjust the cursor position
+        switch (_cursorPosition)
+        {
+            case 0:
+                transform.position = new Vector2(
+                    GameObject.Find("FreePlay").GetComponent<RectTransform>().position.x - _widthMod,
+                    GameObject.Find("FreePlay").GetComponent<RectTransform>().position.y + _heightMod);
+                break;
+            case 1:
+                transform.position = new Vector2(
+                    GameObject.Find("SongEditor").GetComponent<RectTransform>().position.x - _widthMod,
+                    GameObject.Find("SongEditor").GetComponent<RectTransform>().position.y + _heightMod);
+                break;
+            case 2:
+                transform.position = new Vector2(
+                    GameObject.Find("Settings").GetComponent<RectTransform>().position.x - _widthMod,
+                    GameObject.Find("Settings").GetComponent<RectTransform>().position.y + _heightMod);
+                break;
+            case 3:
+                transform.position = new Vector2(
+                    GameObject.Find("Quit").GetComponent<RectTransform>().position.x - _widthMod,
+                    GameObject.Find("Quit").GetComponent<RectTransform>().position.y + _heightMod);
+                break;
+        }
     }
 
     public void QuitGame()

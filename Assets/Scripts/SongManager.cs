@@ -1,9 +1,8 @@
 using System.IO;
 using System.Collections;
-using System.Xml;
-using System.Xml.Serialization;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using TMPro;
 
 public class SongManager : MonoBehaviour
@@ -11,12 +10,32 @@ public class SongManager : MonoBehaviour
     //The song archive is a list of SongPackage files, containing references to related files for each song
     public List<SongPackage> songArchive = new List<SongPackage>();
     public bool songsLoaded = false;
-    
+
+    private void Awake()
+    {
+        DontDestroyOnLoad(this.gameObject);
+    }
+
     // Start is called before the first frame update
     void Start()
     {
+        InitialiseSongManager();
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (songsLoaded == true && SceneManager.GetActiveScene().name == "SongLoader")
+        {
+            Loader.Load(Loader.Scene.TitleScreen);
+        }
+    }
+
+    //This function initialises the song manager for the first time
+    void InitialiseSongManager()
+    {
         //First scan the songs folder and create a song package object for each song found
-        ScanFiles();
+        ScanSongDirectory();
 
         //For each song package, instantiate the song's information and files into its song package & create a UI Tile for it
         foreach (SongPackage newPackage in songArchive)
@@ -25,23 +44,13 @@ public class SongManager : MonoBehaviour
             BuildSongPackages(newPackage);
         }
 
-        //Save the collected song data to an xml file
-        Save(songArchive);
+        InitialiseAudioClips(songArchive);
 
         songsLoaded = true;
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        if (songsLoaded == true)
-        {
-            Loader.Load(Loader.Scene.TitleScreen);
-        }
-    }
-
     //This function generates a list of the songs and related files in the song directory
-    void ScanFiles()
+    void ScanSongDirectory()
     {
         //Counts up for each new song added to the songArchive
         int _count = 0;
@@ -86,7 +95,7 @@ public class SongManager : MonoBehaviour
                         songArchive[_count].chartPath = temp[0];
                         if (temp[0] == null)
                         {
-                            Debug.Log("Chart not found for song " + song.ToString());
+                            Debug.Log("Chart File not found for song " + song.ToString());
                         }
 
                         //Count one additional song added to the songArchive
@@ -191,59 +200,26 @@ public class SongManager : MonoBehaviour
 
             _count++;
         }
-
-        //Instantiate the song files so they can be played later
-        //Trim the path string
-        string _tempString = sP.songPath.ToString().Remove(0, 73);
-        _tempString = _tempString.Remove((_tempString.Length - 4), 4);
-        //Debug.Log(_tempString);
-
-        //Load the audio clip from the file
-        AudioClip _tempClip = Resources.Load<AudioClip>(_tempString);
-
-        //Assign the loaded clip to the song's audio member
-        sP.songAudio = _tempClip;
-
-        //Output the current song name to the UI
-        GameObject.Find("Data").GetComponent<TextMeshProUGUI>().text = sP.songTitle + " Loaded!";
     }
 
-    //Save the song archive data to an xml file
-    public void Save(List<SongPackage> archive)
+    //Initialise the audio to be playable
+    public void InitialiseAudioClips(List<SongPackage> archive)
     {
-        XmlSerializer serializer = new XmlSerializer(typeof(List<SongPackage>));
-        TextWriter writer = new StreamWriter("C:/Users/Nicholas Street/Unity Projects/GitarooProtoype/Assets/Resources/Songs/songarchive.xml");
+        foreach (SongPackage sP in archive)
+        {
+            //Trim the path string
+            string _tempString = sP.songPath.ToString().Remove(0, 73);
+            _tempString = _tempString.Remove((_tempString.Length - 4), 4);
+            //Debug.Log(_tempString);
 
-        serializer.Serialize(writer, archive);
-    }
+            //Load the audio clip from the file
+            AudioClip _tempClip = Resources.Load<AudioClip>(_tempString);
 
-    //Load the song archive data from an xml file
-    public List<SongPackage> Load()
-    {
-        XmlSerializer serializer = new XmlSerializer(typeof(List<SongPackage>));
-        serializer.UnknownNode += new XmlNodeEventHandler(serializer_UnknownNode);
-        serializer.UnknownAttribute += new XmlAttributeEventHandler(serializer_UnknownAttribute);
+            //Assign the loaded clip to the song's audio member
+            sP.songAudio = _tempClip;
 
-        FileStream fs = new FileStream("C:/Users/Nicholas Street/Unity Projects/GitarooProtoype/Assets/Resources/Songs/songarchive.xml", FileMode.Open);
-        List<SongPackage> songArchive;
-
-        songArchive = (List<SongPackage>)serializer.Deserialize(fs);
-
-        return songArchive;
-    }
-
-    //Handles unknown node errors from the xml file reader
-    private void serializer_UnknownNode
-    (object sender, XmlNodeEventArgs e)
-    {
-        Debug.Log("Unknown Node:" + e.Name + "\t" + e.Text);
-    }
-
-    //Handles unknown attribute errors from the xml file reader
-    private void serializer_UnknownAttribute
-    (object sender, XmlAttributeEventArgs e)
-    {
-        System.Xml.XmlAttribute attr = e.Attr;
-        Debug.Log("Unknown attribute " + attr.Name + "='" + attr.Value + "'");
+            //Output the current song name to the UI
+            GameObject.Find("Data").GetComponent<TextMeshProUGUI>().text = sP.songTitle + " Loaded!";
+        }
     }
 }
